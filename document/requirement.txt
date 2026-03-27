@@ -1,0 +1,10 @@
+1. Core feature
+Xây dựng hệ thống chấm công thông minh cho doanh nghiệp quy mô 100 chi nhánh, 5.000 nhân viên. Xác định vị trí bằng WiFi và/hoặc GPS. Tính năng bắt buộc nhưng không giới hạn:
+•	Check-in/Check-out: Xác định vị trí qua WiFi SSID/BSSID hoặc GPS geofencing. Chống gian lận (fake GPS, VPN)
+•	Quản lý chi nhánh: CRUD chi nhánh + cấu hình WiFi/GPS hợp lệ cho từng địa điểm. Gán nhân viên vào chi nhánh
+•	Lịch sử & báo cáo: Xem theo ngày/tuần/tháng, trạng thái (đúng giờ/trễ/vắng), tổng giờ làm, overtime
+•	Dashboard: Thống kê tổng hợp toàn hệ thống, lọc theo chi nhánh/phòng ban, xuất báo cáo
+•	Phân quyền: Admin (toàn hệ thống) / Manager (chi nhánh) / Nhân viên (cá nhân)
+
+⚡ YÊU CẦU QUY MÔ — Thiết kế đáp ứng tối thiểu:
+100 chi nhánh hoạt động đồng thời • 5.000 nhân viên check-in trong khung giờ cao điểm • Database schema hỗ trợ multi-branch • API phân trang + filter hiệu quả • Giải thích chiến lược scale trong README (có thể chưa cần implement hết, nhưng phải thiết kế sẵn)

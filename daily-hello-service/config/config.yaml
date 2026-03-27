@@ -1,0 +1,22 @@
+app: dhs
+log_level: debug
+db_log: true
+env: uat
+http_address: 8282
+allow_origins: "*"
+sensitive_fields:
+  password: (?P<FIRST>[0-9]{6})(?P<MASK>[0-9]*)(?P<LAST>[0-9]{4})
+database:
+  host: localhost
+  port: 5461
+  username: ams
+  password: ams123
+  database: dhdb
+  search_path: public
+  ssl_mode: disable
+auto_migration: true
+jwt_config:
+  secret_key: secret
+  duration: 30 # in seconds
+  duration_refresh: 120 # in seconds
+  algorithm: HS256
