@@ -50,7 +50,7 @@ var (
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host localhost:8281
+// @host localhost:8282
 // @BasePath /api/
 // @securityDefinitions.apikey BearerTokenAuth
 // @in header

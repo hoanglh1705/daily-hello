@@ -6,7 +6,7 @@ import (
 	"github.com/go-gormigrate/gormigrate/v2"
 )
 
-func migrateData(cfg *config.Config) []*gormigrate.Migration {
+func migrateData(_ *config.Config) []*gormigrate.Migration {
 	migrations := []*gormigrate.Migration{}
 	// migrations = append(migrations,
 	// &gormigrate.Migration{

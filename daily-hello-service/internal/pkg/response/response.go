@@ -8,25 +8,22 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// Response represents standard API response
 type Response struct {
-	Success bool      `json:"success"`
-	Data    any       `json:"data,omitempty"`
-	Error   *AppError `json:"error,omitempty"`
+	Success      bool   `json:"success"`
+	Data         interface{} `json:"data,omitempty"`
+	ErrorCode    string `json:"error_code,omitempty"`
+	ErrorMessage string `json:"error_message,omitempty"`
 }
 
-type AppError struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
-
-func Success(c echo.Context, data any) error {
+func Success(c echo.Context, data interface{}) error {
 	return c.JSON(http.StatusOK, Response{
 		Success: true,
 		Data:    data,
 	})
 }
 
-func Created(c echo.Context, data any) error {
+func Created(c echo.Context, data interface{}) error {
 	return c.JSON(http.StatusCreated, Response{
 		Success: true,
 		Data:    data,
@@ -35,11 +32,9 @@ func Created(c echo.Context, data any) error {
 
 func Error(c echo.Context, err appErrors.AppError) error {
 	return c.JSON(mapStatus(err.Code), Response{
-		Success: false,
-		Error: &AppError{
-			Code:    err.Code,
-			Message: err.Message,
-		},
+		Success:      false,
+		ErrorCode:    err.Code,
+		ErrorMessage: err.Message,
 	})
 }
 
@@ -49,11 +44,9 @@ func HandleError(c echo.Context, err error) error {
 	}
 
 	return c.JSON(http.StatusInternalServerError, Response{
-		Success: false,
-		Error: &AppError{
-			Code:    "INTERNAL_ERROR",
-			Message: "Something went wrong",
-		},
+		Success:      false,
+		ErrorCode:    "INTERNAL_ERROR",
+		ErrorMessage: "Something went wrong",
 	})
 }
 

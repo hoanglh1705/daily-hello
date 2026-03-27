@@ -8,19 +8,29 @@ import (
 	"gorm.io/gorm"
 )
 
-type BranchRepository struct {
-	db *gorm.DB
+type (
+	BranchRepository interface {
+		Create(ctx context.Context, branch *models.Branch) error
+		FindByID(ctx context.Context, id uint) (*models.Branch, error)
+		Update(ctx context.Context, branch *models.Branch) error
+		Delete(ctx context.Context, id uint) error
+		List(ctx context.Context, pq models.PaginationQuery) ([]models.Branch, int64, error)
+	}
+
+	branchRepository struct {
+		db *gorm.DB
+	}
+)
+
+func NewBranchRepository(db *gorm.DB) BranchRepository {
+	return &branchRepository{db: db}
 }
 
-func NewBranchRepository(db *gorm.DB) *BranchRepository {
-	return &BranchRepository{db: db}
-}
-
-func (r *BranchRepository) Create(ctx context.Context, branch *models.Branch) error {
+func (r *branchRepository) Create(ctx context.Context, branch *models.Branch) error {
 	return r.db.WithContext(ctx).Create(branch).Error
 }
 
-func (r *BranchRepository) FindByID(ctx context.Context, id uint) (*models.Branch, error) {
+func (r *branchRepository) FindByID(ctx context.Context, id uint) (*models.Branch, error) {
 	var branch models.Branch
 	err := r.db.WithContext(ctx).Preload("WifiList").First(&branch, id).Error
 	if err != nil {
@@ -29,15 +39,15 @@ func (r *BranchRepository) FindByID(ctx context.Context, id uint) (*models.Branc
 	return &branch, nil
 }
 
-func (r *BranchRepository) Update(ctx context.Context, branch *models.Branch) error {
+func (r *branchRepository) Update(ctx context.Context, branch *models.Branch) error {
 	return r.db.WithContext(ctx).Save(branch).Error
 }
 
-func (r *BranchRepository) Delete(ctx context.Context, id uint) error {
+func (r *branchRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&models.Branch{}, id).Error
 }
 
-func (r *BranchRepository) List(ctx context.Context, pq models.PaginationQuery) ([]models.Branch, int64, error) {
+func (r *branchRepository) List(ctx context.Context, pq models.PaginationQuery) ([]models.Branch, int64, error) {
 	var items []models.Branch
 	var total int64
 

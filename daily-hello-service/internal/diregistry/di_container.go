@@ -38,18 +38,18 @@ const (
 	JWTMiddlewareDIName string = "JWTMiddleware"
 
 	// * Usecase
-	HelloWorldUsecaseDIName string = "HelloWorldUsecase"
+	HelloWorldUsecaseDIName  string = "HelloWorldUsecase"
+	BranchServiceDIName      string = "BranchService"
+	BranchWifiServiceDIName  string = "BranchWifiService"
 
 	// * Api
 
-	// Admin
-	AdminCompanyAPIDIName string = "AdminCompanyAPI"
+	// Auth
+	BranchAPIDIName     string = "BranchAPI"
+	BranchWifiAPIDIName string = "BranchWifiAPI"
 
-	// Agent
-	AgentCompanyAPIDIName string = "AgentCompanyAPI"
-
-	// integration
-	IntegrationStaffAPIDIName string = "IntegrationStaffAPI"
+	// Public
+	PublicCompanyAPIDIName string = "PublicCompanyAPI"
 )
 
 func BuildDIContainer() {

@@ -13,13 +13,13 @@ import (
 
 type AttendanceService struct {
 	repo            *repositories.AttendanceRepository
-	branchRepo      *repositories.BranchRepository
+	branchRepo      repositories.BranchRepository
 	locationService *LocationService
 }
 
 func NewAttendanceService(
 	repo *repositories.AttendanceRepository,
-	branchRepo *repositories.BranchRepository,
+	branchRepo repositories.BranchRepository,
 	locationService *LocationService,
 ) *AttendanceService {
 	return &AttendanceService{
