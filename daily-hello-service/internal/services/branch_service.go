@@ -18,11 +18,13 @@ func NewBranchService(repo *repositories.BranchRepository) *BranchService {
 
 func (s *BranchService) Create(ctx context.Context, req models.CreateBranchRequest) (*models.Branch, error) {
 	branch := &models.Branch{
-		Name:    req.Name,
-		Address: req.Address,
-		Lat:     req.Lat,
-		Lng:     req.Lng,
-		Radius:  req.Radius,
+		BranchCode:       req.BranchCode,
+		ParentBranchCode: req.ParentBranchCode,
+		Name:             req.Name,
+		Address:          req.Address,
+		Lat:              req.Lat,
+		Lng:              req.Lng,
+		Radius:           req.Radius,
 	}
 
 	if err := s.repo.Create(ctx, branch); err != nil {
@@ -46,6 +48,9 @@ func (s *BranchService) Update(ctx context.Context, id uint, req models.UpdateBr
 		return nil, appErrors.ErrBranchNotFound
 	}
 
+	if req.ParentBranchCode != "" {
+		branch.ParentBranchCode = req.ParentBranchCode
+	}
 	if req.Name != "" {
 		branch.Name = req.Name
 	}

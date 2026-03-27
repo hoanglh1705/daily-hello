@@ -69,6 +69,8 @@ CREATE INDEX idx_users_branch ON users(branch_id);
 ```sql
 CREATE TABLE branches (
     id BIGSERIAL PRIMARY KEY,
+    branch_code VARCHAR(100) UNIQUE NOT NULL,
+    parent_branch_code VARCHAR(100),
     name VARCHAR(100) NOT NULL,
     address TEXT,
     lat DOUBLE PRECISION,

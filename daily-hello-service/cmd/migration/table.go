@@ -33,53 +33,22 @@ type BaseWithoutDeletedAt struct {
 
 func migrateTable() []*gormigrate.Migration {
 	migrations := []*gormigrate.Migration{}
-	migrations = append(migrations, &gormigrate.Migration{
-		ID: "202520030931",
-		Migrate: func(tx *gorm.DB) error {
-			// it's a good practice to copy the struct inside the function,
-			// so side effects are prevented if the original struct changes during the time
-
-			type Company struct {
-				ID                  int64  `gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
-				Name                string `gorm:"column:name;type:varchar(255)"`
-				CIF                 string `gorm:"column:cif;type:varchar(255)"`
-				BusinessLicense     string `gorm:"column:business_license;type:varchar(255)"`
-				ParentID            int64  `gorm:"column:parent_id;type:bigint"`
-				Representative      string `gorm:"column:representative;type:varchar(255)"`
-				Status              string `gorm:"column:status;type:varchar(255)"`
-				NeedApproveNewStore bool   `gorm:"column:need_approve_new_store;type:boolean;default:false"`
-				NeedApproveNewStaff bool   `gorm:"column:need_approve_new_staff;type:boolean;default:false"`
-				HDBCanManage        bool   `gorm:"column:hdb_can_manage;type:boolean;default:false"`
-				Accts               string `gorm:"column:accts;type:text;default:{}"`
-				PartnerStatus       string `gorm:"column:partner_status;type:varchar(255)"`
-				Base
-			}
-
-			if err := tx.Set("gorm:table_options", defaultTableOpts).AutoMigrate(&Company{}); err != nil {
-				return err
-			}
-			return nil
-		},
-		Rollback: func(tx *gorm.DB) error {
-			return tx.Migrator().DropTable("companies")
-		},
-	},
-	)
-
 	// Smart Attendance tables
 	migrations = append(migrations, &gormigrate.Migration{
 		ID: "202603271230",
 		Migrate: func(tx *gorm.DB) error {
 			type Branch struct {
-				ID        uint      `gorm:"column:id;primaryKey;autoIncrement"`
-				Name      string    `gorm:"column:name;type:varchar(100);not null"`
-				Address   string    `gorm:"column:address;type:text"`
-				Lat       *float64  `gorm:"column:lat;type:double precision"`
-				Lng       *float64  `gorm:"column:lng;type:double precision"`
-				Radius    *int      `gorm:"column:radius;type:int"`
-				Status    string    `gorm:"column:status;type:varchar(20);default:'active'"`
-				CreatedAt time.Time `gorm:"column:created_at"`
-				UpdatedAt time.Time `gorm:"column:updated_at"`
+				ID               uint      `gorm:"column:id;primaryKey;autoIncrement"`
+				BranchCode       string    `gorm:"column:branch_code;type:varchar(100);uniqueIndex;not null"`
+				ParentBranchCode string    `gorm:"column:parent_branch_code;type:varchar(100)"`
+				Name             string    `gorm:"column:name;type:varchar(100);not null"`
+				Address          string    `gorm:"column:address;type:text"`
+				Lat              *float64  `gorm:"column:lat;type:double precision"`
+				Lng              *float64  `gorm:"column:lng;type:double precision"`
+				Radius           *int      `gorm:"column:radius;type:int"`
+				Status           string    `gorm:"column:status;type:varchar(20);default:'active'"`
+				CreatedAt        time.Time `gorm:"column:created_at"`
+				UpdatedAt        time.Time `gorm:"column:updated_at"`
 			}
 
 			type User struct {
@@ -199,6 +168,35 @@ func migrateTable() []*gormigrate.Migration {
 				return err
 			}
 			if err := tx.Migrator().DropTable("branches"); err != nil {
+				return err
+			}
+			return nil
+		},
+	})
+
+	// Add branch_code and parent_branch_code to branches
+	migrations = append(migrations, &gormigrate.Migration{
+		ID: "202603271339",
+		Migrate: func(tx *gorm.DB) error {
+			if err := tx.Exec(`ALTER TABLE branches ADD COLUMN IF NOT EXISTS branch_code VARCHAR(100) NOT NULL DEFAULT ''`).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`ALTER TABLE branches ADD COLUMN IF NOT EXISTS parent_branch_code VARCHAR(100)`).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_branches_branch_code ON branches(branch_code)`).Error; err != nil {
+				return err
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			if err := tx.Exec(`DROP INDEX IF EXISTS idx_branches_branch_code`).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`ALTER TABLE branches DROP COLUMN IF EXISTS parent_branch_code`).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`ALTER TABLE branches DROP COLUMN IF EXISTS branch_code`).Error; err != nil {
 				return err
 			}
 			return nil
