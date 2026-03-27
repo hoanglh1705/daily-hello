@@ -1,0 +1,19 @@
+# .tbls.yml
+
+# DSN (Database Source Name) to connect database
+dsn: postgres://ams:ams123@localhost:5461/dhdb?sslmode=disable
+
+# Path to generate document
+# Default is `dbdoc`
+docPath: doc/schema
+
+lint:
+  requireColumnComment:
+    enabled: true
+    exclude:
+      - id
+      - created
+      - updated
+  columnCount:
+    enabled: true
+    max: 40
