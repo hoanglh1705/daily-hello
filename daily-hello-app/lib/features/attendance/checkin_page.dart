@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'attendance_controller.dart';
 import '../../widgets/app_button.dart';
@@ -13,6 +14,169 @@ class CheckInPage extends StatefulWidget {
 }
 
 class _CheckInPageState extends State<CheckInPage> {
+  bool _isLocationError(String message) {
+    final normalized = message.toLowerCase();
+    return normalized.contains('vi tri') ||
+        normalized.contains('gps') ||
+        normalized.contains('location');
+  }
+
+  Future<void> _showLocationErrorSheet(
+    String message, {
+    required Future<void> Function() onRetry,
+  }) async {
+    final isPermissionDeniedForever =
+        message.toLowerCase().contains('vinh vien');
+    final isGpsDisabled = message.toLowerCase().contains('gps');
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_off_outlined,
+                      color: theme.colorScheme.error,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Can quyen vi tri',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: AppButton(
+                    label: isPermissionDeniedForever
+                        ? 'Mo cai dat'
+                        : isGpsDisabled
+                            ? 'Mo GPS'
+                            : 'Thu lai',
+                    icon: isPermissionDeniedForever
+                        ? Icons.settings_outlined
+                        : isGpsDisabled
+                            ? Icons.my_location
+                            : Icons.refresh,
+                    onPressed: () async {
+                      Navigator.pop(sheetContext);
+                      if (isPermissionDeniedForever) {
+                        await Geolocator.openAppSettings();
+                        return;
+                      }
+                      if (isGpsDisabled) {
+                        await Geolocator.openLocationSettings();
+                        return;
+                      }
+                      await onRetry();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showActionErrorSnackBar({
+    required String message,
+    required Future<void> Function() onRetry,
+  }) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Thu lai',
+            onPressed: () {
+              onRetry();
+            },
+          ),
+        ),
+      );
+  }
+
+  Future<void> _handleCheckIn() async {
+    final controller = context.read<AttendanceController>();
+    final ok = await controller.checkIn();
+    if (!mounted) return;
+
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Check-in thanh cong!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      return;
+    }
+
+    final message = controller.errorMessage ?? 'Check-in that bai.';
+    if (_isLocationError(message)) {
+      await _showLocationErrorSheet(
+        message,
+        onRetry: _handleCheckIn,
+      );
+      return;
+    }
+    _showActionErrorSnackBar(
+      message: message,
+      onRetry: _handleCheckIn,
+    );
+  }
+
+  Future<void> _handleCheckOut() async {
+    final controller = context.read<AttendanceController>();
+    final ok = await controller.checkOut();
+    if (!mounted) return;
+
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Check-out thanh cong!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final message = controller.errorMessage ?? 'Check-out that bai.';
+    if (_isLocationError(message)) {
+      await _showLocationErrorSheet(
+        message,
+        onRetry: _handleCheckOut,
+      );
+      return;
+    }
+    _showActionErrorSnackBar(
+      message: message,
+      onRetry: _handleCheckOut,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -82,34 +246,13 @@ class _CheckInPageState extends State<CheckInPage> {
               ),
             ),
             const SizedBox(height: 24),
-            if (controller.errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  controller.errorMessage!,
-                  style: TextStyle(color: theme.colorScheme.error),
-                  textAlign: TextAlign.center,
-                ),
-              ),
             if (today == null || !today.isCheckedOut) ...[
               if (today == null)
                 AppButton(
                   label: 'Check In',
                   icon: Icons.login,
                   isLoading: controller.isLoading,
-                  onPressed: controller.isLoading
-                      ? null
-                      : () async {
-                          final ok =
-                              await context.read<AttendanceController>().checkIn();
-                          if (ok && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Check-in thành công!'),
-                                  backgroundColor: Colors.green),
-                            );
-                          }
-                        },
+                  onPressed: controller.isLoading ? null : _handleCheckIn,
                 ),
               if (today != null && !today.isCheckedOut)
                 AppButton(
@@ -117,19 +260,7 @@ class _CheckInPageState extends State<CheckInPage> {
                   icon: Icons.logout,
                   color: Colors.red,
                   isLoading: controller.isLoading,
-                  onPressed: controller.isLoading
-                      ? null
-                      : () async {
-                          final ok =
-                              await context.read<AttendanceController>().checkOut();
-                          if (ok && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Check-out thành công!'),
-                                  backgroundColor: Colors.orange),
-                            );
-                          }
-                        },
+                  onPressed: controller.isLoading ? null : _handleCheckOut,
                 ),
             ] else
               Container(

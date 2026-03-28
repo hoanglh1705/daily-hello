@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/utils/location_permission_utils.dart';
 import 'auth_controller.dart';
 import '../../widgets/app_button.dart';
 
@@ -25,6 +26,17 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    try {
+      await LocationPermissionUtils.ensureLocationPermission();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+      );
+      return;
+    }
+
     final controller = context.read<AuthController>();
     final success = await controller.login(
       _usernameCtrl.text.trim(),

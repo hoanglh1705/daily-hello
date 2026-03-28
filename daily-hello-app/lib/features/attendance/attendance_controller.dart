@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import '../../core/network/api_response.dart';
+import '../../core/utils/location_permission_utils.dart';
 import '../../models/attendance.dart';
 import '../../services/attendance_service.dart';
 
@@ -18,6 +19,10 @@ class AttendanceController extends ChangeNotifier {
   bool hasMore = true;
 
   AttendanceController(this._service);
+
+  String _formatError(Object error) {
+    return error.toString().replaceFirst('Exception: ', '');
+  }
 
   Future<void> loadTodayAttendance() async {
     todayAttendance = await _service.getTodayAttendance();
@@ -41,7 +46,7 @@ class AttendanceController extends ChangeNotifier {
       return true;
     } catch (error) {
       errorMessage =
-          getApiErrorMessage(error) ?? 'Check-in thất bại: ${error.toString()}';
+          getApiErrorMessage(error) ?? 'Check-in thất bại: ${_formatError(error)}';
       return false;
     } finally {
       isLoading = false;
@@ -66,7 +71,7 @@ class AttendanceController extends ChangeNotifier {
       return true;
     } catch (error) {
       errorMessage = getApiErrorMessage(error) ??
-          'Check-out thất bại: ${error.toString()}';
+          'Check-out thất bại: ${_formatError(error)}';
       return false;
     } finally {
       isLoading = false;
@@ -95,7 +100,7 @@ class AttendanceController extends ChangeNotifier {
       }
     } catch (error) {
       errorMessage = getApiErrorMessage(error) ??
-          'Lỗi tải lịch sử: ${error.toString()}';
+          'Lỗi tải lịch sử: ${_formatError(error)}';
     } finally {
       isLoadingHistory = false;
       notifyListeners();
@@ -103,19 +108,10 @@ class AttendanceController extends ChangeNotifier {
   }
 
   Future<Position> _getPosition() async {
+    await LocationPermissionUtils.ensureLocationPermission();
+
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) throw Exception('GPS chưa được bật');
-
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        throw Exception('Quyền GPS bị từ chối');
-      }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      throw Exception('Quyền GPS bị từ chối vĩnh viễn');
-    }
 
     return await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
