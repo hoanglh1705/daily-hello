@@ -5,6 +5,8 @@ import (
 	"daily-hello-service/internal/diregistry"
 	"daily-hello-service/internal/handlers"
 
+	auth_middleware "go-libs/http_middlewares/auth"
+
 	echo "github.com/labstack/echo/v4"
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"github.com/thoas/go-funk"
@@ -13,27 +15,49 @@ import (
 func RegisterRoutes(httpServer *echo.Echo) {
 	cfg := diregistry.GetDependency(diregistry.ConfigDIName).(*config.Config)
 	if funk.Contains(config.NonProductionEnvironments, cfg.Env) {
-		// use echoSwagger middleware to serve the API docs
 		httpServer.GET("/swagger/*", echoSwagger.WrapHandler)
 	}
 
-	// Init route
-	// Init API v1
 	apiGroup := httpServer.Group("/api")
 	v1 := apiGroup.Group("/v1")
-	registerAuthRoutes(v1)
+
+	registerPublicRoutes(v1)
+	registerProtectedRoutes(v1)
 }
 
 func registerPublicRoutes(g *echo.Group) {
+	authHandler := diregistry.GetDependency(diregistry.AuthAPIDIName).(*handlers.AuthHandler)
 
+	// POST /api/v1/auth/login
+	// POST /api/v1/auth/refresh-token
+	authGroup := g.Group("/auth")
+	authGroup.POST("/login", authHandler.Login)
+	authGroup.POST("/logout", authHandler.Logout)
+	authGroup.POST("/refresh-token", authHandler.RefreshToken)
 }
 
-func registerAuthRoutes(g *echo.Group) {
+func registerProtectedRoutes(g *echo.Group) {
+	jwtMiddleware := diregistry.GetDependency(diregistry.JWTMiddlewareDIName).(*auth_middleware.Service)
+	g.Use(jwtMiddleware.MWFunc())
+
+	// Auth routes (requires JWT)
+	// POST /api/v1/auth/logout
+	authHandler := diregistry.GetDependency(diregistry.AuthAPIDIName).(*handlers.AuthHandler)
 	authGroup := g.Group("/auth")
+	authGroup.POST("/logout", authHandler.Logout)
+
+	// User routes
+	userHandler := diregistry.GetDependency(diregistry.UserAPIDIName).(*handlers.UserHandler)
+	userGroup := g.Group("/users")
+	userGroup.POST("", userHandler.Register)
+	userGroup.GET("", userHandler.List)
+	userGroup.GET("/me", userHandler.GetMe)
+	userGroup.GET("/:id", userHandler.GetByID)
+	userGroup.PUT("/:id", userHandler.Update)
 
 	// Branch routes
 	branchHandler := diregistry.GetDependency(diregistry.BranchAPIDIName).(*handlers.BranchHandler)
-	branchGroup := authGroup.Group("/branches")
+	branchGroup := g.Group("/branches")
 	branchGroup.POST("", branchHandler.Create)
 	branchGroup.GET("/:id", branchHandler.GetByID)
 	branchGroup.PUT("/:id", branchHandler.Update)
@@ -42,7 +66,7 @@ func registerAuthRoutes(g *echo.Group) {
 
 	// Branch Wifi routes
 	branchWifiHandler := diregistry.GetDependency(diregistry.BranchWifiAPIDIName).(*handlers.BranchWifiHandler)
-	branchWifiGroup := authGroup.Group("/branch-wifi")
+	branchWifiGroup := g.Group("/branch-wifi")
 	branchWifiGroup.POST("", branchWifiHandler.Create)
 	branchWifiGroup.GET("/:id", branchWifiHandler.GetByID)
 	branchWifiGroup.GET("/branch/:branch_id", branchWifiHandler.GetByBranchID)

@@ -54,9 +54,9 @@ func mapStatus(code string) int {
 	switch code {
 	case "INVALID_INPUT", "ALREADY_CHECKED_IN", "NOT_CHECKED_IN", "EMAIL_EXISTS", "FAKE_GPS":
 		return http.StatusBadRequest
-	case "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_TOKEN":
+	case "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_TOKEN", "TOKEN_EXPIRED":
 		return http.StatusUnauthorized
-	case "FORBIDDEN":
+	case "FORBIDDEN", "ACCOUNT_INACTIVE":
 		return http.StatusForbidden
 	case "NOT_FOUND", "BRANCH_NOT_FOUND":
 		return http.StatusNotFound

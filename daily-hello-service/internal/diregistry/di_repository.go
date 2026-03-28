@@ -13,6 +13,21 @@ func initRepositoriesBuilder() {
 		arr := []di.Def{}
 		arr = append(arr,
 			di.Def{
+				Name:  TokenRepositoryDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					sql := ctn.Get(DataBaseDIName).(sqlormhelper.SqlGormDatabase)
+					db, err := sql.GetConn()
+					if err != nil {
+						return nil, err
+					}
+					return repositories.NewTokenRepository(db), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
+			di.Def{
 				Name:  UserRepositoryDIName,
 				Scope: di.App,
 				Build: func(ctn di.Container) (any, error) {

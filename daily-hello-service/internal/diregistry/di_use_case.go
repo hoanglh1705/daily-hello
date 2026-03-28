@@ -1,6 +1,7 @@
 package diregistry
 
 import (
+	"daily-hello-service/config"
 	"daily-hello-service/internal/repositories"
 	"daily-hello-service/internal/services"
 	"go-libs/dihelper"
@@ -12,6 +13,36 @@ func initUseCasesBuilder() {
 	dihelper.UsecasesBuilder = func() []di.Def {
 		arr := []di.Def{}
 		arr = append(arr,
+			di.Def{
+				Name:  AuthServiceDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					cfg := ctn.Get(ConfigDIName).(*config.Config)
+					userRepo := ctn.Get(UserRepositoryDIName).(*repositories.UserRepository)
+					tokenRepo := ctn.Get(TokenRepositoryDIName).(repositories.TokenRepository)
+					return services.NewAuthService(
+						userRepo,
+						tokenRepo,
+						cfg.JwtConfig.SecretKey,
+						cfg.JwtConfig.Duration,
+						cfg.JwtConfig.DurationRefresh,
+					), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
+			di.Def{
+				Name:  UserServiceDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					userRepo := ctn.Get(UserRepositoryDIName).(*repositories.UserRepository)
+					return services.NewUserService(userRepo), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
 			di.Def{
 				Name:  BranchServiceDIName,
 				Scope: di.App,

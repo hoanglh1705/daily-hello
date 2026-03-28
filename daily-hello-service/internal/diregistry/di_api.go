@@ -13,6 +13,28 @@ func initApiBuilder() {
 		arr := []di.Def{}
 		arr = append(arr,
 			di.Def{
+				Name:  AuthAPIDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					svc := ctn.Get(AuthServiceDIName).(*services.AuthService)
+					return handlers.NewAuthHandler(svc), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
+			di.Def{
+				Name:  UserAPIDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					svc := ctn.Get(UserServiceDIName).(*services.UserService)
+					return handlers.NewUserHandler(svc), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
+			di.Def{
 				Name:  BranchAPIDIName,
 				Scope: di.App,
 				Build: func(ctn di.Container) (any, error) {

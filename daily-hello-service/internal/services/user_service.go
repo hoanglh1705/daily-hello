@@ -7,18 +7,15 @@ import (
 	appErrors "daily-hello-service/internal/pkg/errors"
 	"daily-hello-service/internal/repositories"
 
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
-	"time"
 )
 
 type UserService struct {
-	repo      *repositories.UserRepository
-	jwtSecret string
+	repo *repositories.UserRepository
 }
 
-func NewUserService(repo *repositories.UserRepository, jwtSecret string) *UserService {
-	return &UserService{repo: repo, jwtSecret: jwtSecret}
+func NewUserService(repo *repositories.UserRepository) *UserService {
+	return &UserService{repo: repo}
 }
 
 func (s *UserService) Create(ctx context.Context, req models.CreateUserRequest) (*models.User, error) {
@@ -49,34 +46,6 @@ func (s *UserService) Create(ctx context.Context, req models.CreateUserRequest) 
 	}
 
 	return user, nil
-}
-
-func (s *UserService) Login(ctx context.Context, req models.LoginRequest) (*models.LoginResponse, error) {
-	user, err := s.repo.FindByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, appErrors.ErrInvalidCreds
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		return nil, appErrors.ErrInvalidCreds
-	}
-
-	// Generate JWT
-	claims := jwt.MapClaims{
-		"user_id": user.ID,
-		"role":    user.Role,
-		"exp":     time.Now().Add(24 * time.Hour).Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := token.SignedString([]byte(s.jwtSecret))
-	if err != nil {
-		return nil, appErrors.ErrInternal
-	}
-
-	return &models.LoginResponse{
-		Token: tokenStr,
-		User:  *user,
-	}, nil
 }
 
 func (s *UserService) GetByID(ctx context.Context, id uint) (*models.User, error) {

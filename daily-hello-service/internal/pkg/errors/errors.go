@@ -24,9 +24,11 @@ var (
 	ErrNotCheckedIn     = AppError{"NOT_CHECKED_IN", "You have not checked in yet"}
 
 	// Auth
-	ErrEmailExists    = AppError{"EMAIL_EXISTS", "Email already registered"}
-	ErrInvalidCreds   = AppError{"INVALID_CREDENTIALS", "Invalid email or password"}
-	ErrInvalidToken   = AppError{"INVALID_TOKEN", "Invalid or expired token"}
+	ErrEmailExists     = AppError{"EMAIL_EXISTS", "Email already registered"}
+	ErrInvalidCreds    = AppError{"INVALID_CREDENTIALS", "Invalid email or password"}
+	ErrInvalidToken    = AppError{"INVALID_TOKEN", "Invalid or expired token"}
+	ErrTokenExpired    = AppError{"TOKEN_EXPIRED", "Refresh token has expired"}
+	ErrAccountInactive = AppError{"ACCOUNT_INACTIVE", "Account is inactive"}
 
 	// Branch
 	ErrBranchNotFound = AppError{"BRANCH_NOT_FOUND", "Branch not found"}

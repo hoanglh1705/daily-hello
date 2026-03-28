@@ -203,5 +203,30 @@ func migrateTable() []*gormigrate.Migration {
 		},
 	})
 
+	// Add refresh_tokens table
+	migrations = append(migrations, &gormigrate.Migration{
+		ID: "202603280900",
+		Migrate: func(tx *gorm.DB) error {
+			type RefreshToken struct {
+				ID        uint      `gorm:"column:id;primaryKey;autoIncrement"`
+				UserID    uint      `gorm:"column:user_id;not null;index"`
+				Token     string    `gorm:"column:token;type:varchar(512);uniqueIndex;not null"`
+				ExpiresAt time.Time `gorm:"column:expires_at;not null"`
+				CreatedAt time.Time `gorm:"column:created_at"`
+			}
+
+			if err := tx.Set("gorm:table_options", defaultTableOpts).AutoMigrate(&RefreshToken{}); err != nil {
+				return err
+			}
+
+			tx.Exec(`ALTER TABLE refresh_tokens ADD CONSTRAINT fk_refresh_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`)
+
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return tx.Migrator().DropTable("refresh_tokens")
+		},
+	})
+
 	return migrations
 }

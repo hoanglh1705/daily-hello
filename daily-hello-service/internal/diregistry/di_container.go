@@ -27,6 +27,7 @@ const (
 	BaseRepositoryDIName              string = "BaseRepository"
 	AuditLogRepositoryDIName          string = "AuditLogRepository"
 	UserRepositoryDIName              string = "UserRepository"
+	TokenRepositoryDIName             string = "TokenRepository"
 	BranchRepositoryDIName            string = "BranchRepository"
 	AttendanceRepositoryDIName        string = "AttendanceRepository"
 	BranchWifiRepositoryDIName        string = "BranchWifiRepository"
@@ -38,13 +39,15 @@ const (
 	JWTMiddlewareDIName string = "JWTMiddleware"
 
 	// * Usecase
-	HelloWorldUsecaseDIName  string = "HelloWorldUsecase"
-	BranchServiceDIName      string = "BranchService"
-	BranchWifiServiceDIName  string = "BranchWifiService"
+	HelloWorldUsecaseDIName string = "HelloWorldUsecase"
+	AuthServiceDIName       string = "AuthService"
+	UserServiceDIName       string = "UserService"
+	BranchServiceDIName     string = "BranchService"
+	BranchWifiServiceDIName string = "BranchWifiService"
 
 	// * Api
-
-	// Auth
+	AuthAPIDIName       string = "AuthAPI"
+	UserAPIDIName       string = "UserAPI"
 	BranchAPIDIName     string = "BranchAPI"
 	BranchWifiAPIDIName string = "BranchWifiAPI"
 
