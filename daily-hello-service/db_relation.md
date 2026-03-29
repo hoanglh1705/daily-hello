@@ -27,6 +27,9 @@ branches ────┘
    │
    ├── branch_wifi
    └── shifts (optional)
+
+users ──── devices (status: pending / approved / rejected)
+users ──── refresh_tokens
 ```
 
 ---
@@ -194,17 +197,43 @@ CREATE TABLE attendance_summary (
 
 ---
 
-## 📱 4.3 devices (anti fake GPS)
+## 📱 4.3 devices (device registration + approval)
+
+Thiết bị phải được admin/manager phê duyệt trước khi được phép chấm công.
 
 ```sql
 CREATE TABLE devices (
     id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT,
-    device_id VARCHAR(100),
-    is_trusted BOOLEAN DEFAULT TRUE,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    device_id VARCHAR(100) NOT NULL,
+    device_name VARCHAR(200),
+    platform VARCHAR(20),     -- android / ios
+    model VARCHAR(100),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending, approved, rejected
+    approved_by BIGINT REFERENCES users(id),
+    approved_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW()
 );
 ```
+
+### 📌 Status flow
+
+```
+[register] → pending → approved ✅ (chấm công được)
+                      → rejected ❌ (không chấm công được)
+```
+
+### 👉 Index
+
+```sql
+CREATE INDEX idx_devices_user ON devices(user_id);
+CREATE INDEX idx_devices_status ON devices(status);
+```
+
+### 🔗 Liên quan
+
+* `approved_by` → FK `users.id` (admin hoặc manager thực hiện duyệt)
+* Khi user bị xóa → cascade xóa toàn bộ thiết bị của user đó
 
 ---
 

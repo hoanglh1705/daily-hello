@@ -44,12 +44,16 @@ const (
 	UserServiceDIName       string = "UserService"
 	BranchServiceDIName     string = "BranchService"
 	BranchWifiServiceDIName string = "BranchWifiService"
+	AttendanceServiceDIName string = "AttendanceService"
+	DeviceServiceDIName     string = "DeviceService"
 
 	// * Api
 	AuthAPIDIName       string = "AuthAPI"
 	UserAPIDIName       string = "UserAPI"
 	BranchAPIDIName     string = "BranchAPI"
 	BranchWifiAPIDIName string = "BranchWifiAPI"
+	AttendanceAPIDIName string = "AttendanceAPI"
+	DeviceAPIDIName     string = "DeviceAPI"
 
 	// Public
 	PublicCompanyAPIDIName string = "PublicCompanyAPI"

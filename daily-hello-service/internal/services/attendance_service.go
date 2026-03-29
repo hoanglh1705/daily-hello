@@ -124,3 +124,14 @@ func (s *AttendanceService) GetHistory(ctx context.Context, filter models.Attend
 		},
 	}, nil
 }
+
+func (s *AttendanceService) GetToday(ctx context.Context, userID uint) (*models.Attendance, error) {
+	att, err := s.repo.FindTodayByUserID(ctx, userID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, appErrors.ErrInternal
+	}
+	return att, nil
+}

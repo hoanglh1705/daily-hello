@@ -32,8 +32,9 @@ type CheckInRequest struct {
 	Lat       float64 `json:"lat" validate:"required"`
 	Lng       float64 `json:"lng" validate:"required"`
 	WifiBSSID string  `json:"wifi_bssid"`
+	WifiSSID  string  `json:"wifi_ssid"`
 	DeviceID  string  `json:"device_id" validate:"required"`
-	BranchID  uint    `json:"branch_id" validate:"required"`
+	BranchID  uint    `json:"branch_id"`
 }
 
 type CheckOutRequest struct {

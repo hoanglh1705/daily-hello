@@ -32,4 +32,12 @@ var (
 
 	// Branch
 	ErrBranchNotFound = AppError{"BRANCH_NOT_FOUND", "Branch not found"}
+
+	// Device
+	ErrDeviceNotFound = AppError{"DEVICE_NOT_FOUND", "Device not found"}
+	ErrDevicePending  = AppError{"DEVICE_PENDING", "Device registration is pending approval"}
+	ErrDeviceRejected = AppError{"DEVICE_REJECTED", "Device registration has been rejected"}
+
+	// WiFi
+	ErrWifiNotAllowed = AppError{"WIFI_NOT_ALLOWED", "WiFi is not registered for this branch"}
 )

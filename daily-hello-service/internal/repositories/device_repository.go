@@ -47,6 +47,26 @@ func (r *DeviceRepository) FindByDeviceID(ctx context.Context, deviceID string) 
 	return &device, nil
 }
 
+func (r *DeviceRepository) FindByUserIDAndDeviceID(ctx context.Context, userID uint, deviceID string) (*models.Device, error) {
+	var device models.Device
+	err := r.db.WithContext(ctx).
+		Where("user_id = ? AND device_id = ?", userID, deviceID).
+		First(&device).Error
+	if err != nil {
+		return nil, err
+	}
+	return &device, nil
+}
+
+func (r *DeviceRepository) FindByStatus(ctx context.Context, status string) ([]models.Device, error) {
+	var items []models.Device
+	err := r.db.WithContext(ctx).Preload("User").Where("status = ?", status).Find(&items).Error
+	if err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func (r *DeviceRepository) Update(ctx context.Context, device *models.Device) error {
 	return r.db.WithContext(ctx).Save(device).Error
 }

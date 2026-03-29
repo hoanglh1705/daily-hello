@@ -17,6 +17,6 @@ database:
 auto_migration: true
 jwt_config:
   secret_key: secret
-  duration: 30 # in seconds
-  duration_refresh: 120 # in seconds
+  duration: 60 # in seconds
+  duration_refresh: 360 # in seconds
   algorithm: HS256

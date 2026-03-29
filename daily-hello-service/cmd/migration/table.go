@@ -228,5 +228,50 @@ func migrateTable() []*gormigrate.Migration {
 		},
 	})
 
+	// Update devices table: replace is_trusted with status + add metadata fields
+	migrations = append(migrations, &gormigrate.Migration{
+		ID: "202603290001",
+		Migrate: func(tx *gorm.DB) error {
+			if err := tx.Exec(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'pending'`).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS device_name VARCHAR(200)`).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS platform VARCHAR(20)`).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS model VARCHAR(100)`).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS approved_by BIGINT`).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP`).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`ALTER TABLE devices DROP COLUMN IF EXISTS is_trusted`).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(`CREATE INDEX IF NOT EXISTS idx_devices_status ON devices(status)`).Error; err != nil {
+				return err
+			}
+			tx.Exec(`ALTER TABLE devices ADD CONSTRAINT fk_devices_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`)
+			tx.Exec(`ALTER TABLE devices ADD CONSTRAINT fk_devices_approved_by FOREIGN KEY (approved_by) REFERENCES users(id)`)
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			tx.Exec(`DROP INDEX IF EXISTS idx_devices_status`)
+			tx.Exec(`ALTER TABLE devices DROP COLUMN IF EXISTS approved_at`)
+			tx.Exec(`ALTER TABLE devices DROP COLUMN IF EXISTS approved_by`)
+			tx.Exec(`ALTER TABLE devices DROP COLUMN IF EXISTS model`)
+			tx.Exec(`ALTER TABLE devices DROP COLUMN IF EXISTS platform`)
+			tx.Exec(`ALTER TABLE devices DROP COLUMN IF EXISTS device_name`)
+			tx.Exec(`ALTER TABLE devices DROP COLUMN IF EXISTS status`)
+			tx.Exec(`ALTER TABLE devices ADD COLUMN IF NOT EXISTS is_trusted BOOLEAN DEFAULT true`)
+			return nil
+		},
+	})
+
 	return migrations
 }

@@ -8,13 +8,13 @@ class BranchService {
   BranchService(this.dio);
 
   Future<List<Branch>> getBranches() async {
-    final res = await dio.get('/branches');
+    final res = await dio.get('/v1/branches');
     final list = unwrapApiData(res.data) as List<dynamic>;
     return list.map((e) => Branch.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<Branch> getBranch(String id) async {
-    final res = await dio.get('/branches/$id');
+    final res = await dio.get('/v1/branches/$id');
     return Branch.fromJson(unwrapApiData(res.data) as Map<String, dynamic>);
   }
 }

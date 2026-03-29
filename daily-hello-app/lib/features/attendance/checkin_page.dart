@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
+import 'package:wifi_signal_strength_indicator/wifi_signal_strength_indicator.dart';
 import 'attendance_controller.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -181,7 +182,9 @@ class _CheckInPageState extends State<CheckInPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AttendanceController>().loadTodayAttendance();
+      final controller = context.read<AttendanceController>();
+      controller.loadTodayAttendance();
+      controller.loadWifiInfo();
     });
   }
 
@@ -245,6 +248,13 @@ class _CheckInPageState extends State<CheckInPage> {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+            _WifiInfoCard(
+              ssid: controller.wifiSsid,
+              signalStrength: controller.wifiSignalStrength,
+              signalLevel: controller.wifiSignalLevel,
+              onRefresh: () => controller.loadWifiInfo(),
+            ),
             const SizedBox(height: 24),
             if (today == null || !today.isCheckedOut) ...[
               if (today == null)
@@ -282,6 +292,163 @@ class _CheckInPageState extends State<CheckInPage> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _WifiInfoCard extends StatelessWidget {
+  final String? ssid;
+  final int? signalStrength;
+  final int? signalLevel;
+  final VoidCallback onRefresh;
+
+  const _WifiInfoCard({
+    required this.ssid,
+    required this.signalStrength,
+    required this.signalLevel,
+    required this.onRefresh,
+  });
+
+  String _signalLabel(int? level) {
+    switch (level) {
+      case 4:
+        return 'Rất mạnh';
+      case 3:
+        return 'Mạnh';
+      case 2:
+        return 'Trung bình';
+      case 1:
+        return 'Yếu';
+      default:
+        return 'Không xác định';
+    }
+  }
+
+  Color _signalColor(int? level) {
+    switch (level) {
+      case 4:
+        return Colors.green;
+      case 3:
+        return Colors.lightGreen;
+      case 2:
+        return Colors.orange;
+      case 1:
+        return Colors.deepOrange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isConnected = ssid != null && ssid!.isNotEmpty;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isConnected ? Icons.wifi : Icons.wifi_off,
+                color: isConnected ? _signalColor(signalLevel) : Colors.grey,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Thông tin WiFi',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              InkWell(
+                onTap: onRefresh,
+                borderRadius: BorderRadius.circular(20),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.refresh, size: 18, color: Colors.grey),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (!isConnected)
+            Text(
+              'Không kết nối WiFi',
+              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            )
+          else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tên WiFi',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        ssid ?? '--',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Cường độ',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (signalStrength != null)
+                          WifiSignalStrengthIndicator(
+                            rssi: signalStrength,
+                            style: WifiSignalStyle.bars,
+                            size: 18,
+                          ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _signalLabel(signalLevel),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: _signalColor(signalLevel),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            if (signalStrength != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '$signalStrength dBm',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[500],
+                ),
+              ),
+            ],
+          ],
+        ],
       ),
     );
   }

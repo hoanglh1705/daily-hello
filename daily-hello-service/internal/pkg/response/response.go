@@ -58,8 +58,10 @@ func mapStatus(code string) int {
 		return http.StatusUnauthorized
 	case "FORBIDDEN", "ACCOUNT_INACTIVE":
 		return http.StatusForbidden
-	case "NOT_FOUND", "BRANCH_NOT_FOUND":
+	case "NOT_FOUND", "BRANCH_NOT_FOUND", "DEVICE_NOT_FOUND":
 		return http.StatusNotFound
+	case "DEVICE_PENDING", "DEVICE_REJECTED", "WIFI_NOT_ALLOWED":
+		return http.StatusForbidden
 	default:
 		return http.StatusInternalServerError
 	}

@@ -56,6 +56,28 @@ func initApiBuilder() {
 					return nil
 				},
 			},
+			di.Def{
+				Name:  AttendanceAPIDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					svc := ctn.Get(AttendanceServiceDIName).(*services.AttendanceService)
+					return handlers.NewAttendanceHandler(svc), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
+			di.Def{
+				Name:  DeviceAPIDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					svc := ctn.Get(DeviceServiceDIName).(*services.DeviceService)
+					return handlers.NewDeviceHandler(svc), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
 		)
 
 		return arr

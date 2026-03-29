@@ -45,6 +45,22 @@ func (r *AttendanceRepository) FindTodayCheckIn(ctx context.Context, userID uint
 	return &att, nil
 }
 
+func (r *AttendanceRepository) FindTodayByUserID(ctx context.Context, userID uint) (*models.Attendance, error) {
+	var att models.Attendance
+	today := time.Now().Truncate(24 * time.Hour)
+	tomorrow := today.Add(24 * time.Hour)
+
+	err := r.db.WithContext(ctx).
+		Preload("User").Preload("Branch").
+		Where("user_id = ? AND check_in_time >= ? AND check_in_time < ?",
+			userID, today, tomorrow).
+		First(&att).Error
+	if err != nil {
+		return nil, err
+	}
+	return &att, nil
+}
+
 func (r *AttendanceRepository) UpdateCheckOut(ctx context.Context, id uint, checkOutTime time.Time, lat, lng *float64) error {
 	updates := map[string]interface{}{
 		"check_out_time": checkOutTime,

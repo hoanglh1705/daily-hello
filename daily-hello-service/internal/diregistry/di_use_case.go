@@ -66,6 +66,31 @@ func initUseCasesBuilder() {
 					return nil
 				},
 			},
+			di.Def{
+				Name:  AttendanceServiceDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					attendanceRepo := ctn.Get(AttendanceRepositoryDIName).(*repositories.AttendanceRepository)
+					branchRepo := ctn.Get(BranchRepositoryDIName).(repositories.BranchRepository)
+					branchWifiRepo := ctn.Get(BranchWifiRepositoryDIName).(repositories.BranchWifiRepository)
+					locationService := services.NewLocationService(branchRepo, branchWifiRepo)
+					return services.NewAttendanceService(attendanceRepo, branchRepo, locationService), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
+			di.Def{
+				Name:  DeviceServiceDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					deviceRepo := ctn.Get(DeviceRepositoryDIName).(*repositories.DeviceRepository)
+					return services.NewDeviceService(deviceRepo), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
 		)
 
 		return arr

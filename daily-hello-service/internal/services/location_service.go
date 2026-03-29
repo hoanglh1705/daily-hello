@@ -8,11 +8,11 @@ import (
 )
 
 type LocationService struct {
-	branchRepo     *repositories.BranchRepository
-	branchWifiRepo *repositories.BranchWifiRepository
+	branchRepo     repositories.BranchRepository
+	branchWifiRepo repositories.BranchWifiRepository
 }
 
-func NewLocationService(branchRepo *repositories.BranchRepository, branchWifiRepo *repositories.BranchWifiRepository) *LocationService {
+func NewLocationService(branchRepo repositories.BranchRepository, branchWifiRepo repositories.BranchWifiRepository) *LocationService {
 	return &LocationService{branchRepo: branchRepo, branchWifiRepo: branchWifiRepo}
 }
 

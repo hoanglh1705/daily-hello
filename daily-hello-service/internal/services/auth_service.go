@@ -99,18 +99,29 @@ func (s *AuthService) RefreshToken(ctx context.Context, req models.RefreshTokenR
 		return nil, appErrors.ErrInternal
 	}
 
+	if err := s.tokenRepo.DeleteByToken(ctx, req.RefreshToken); err != nil {
+		return nil, appErrors.ErrInternal
+	}
+
+	refreshToken, err := s.createRefreshToken(ctx, user.ID)
+	if err != nil {
+		return nil, appErrors.ErrInternal
+	}
+
 	return &models.RefreshTokenResponse{
-		AccessToken: accessToken,
-		TokenType:   "Bearer",
-		ExpiresIn:   int(s.accessDuration.Seconds()),
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    int(s.accessDuration.Seconds()),
 	}, nil
 }
 
 func (s *AuthService) generateAccessToken(user *models.User) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": user.ID,
-		"role":    string(user.Role),
-		"exp":     time.Now().Add(s.accessDuration).Unix(),
+		"user_id":   user.ID,
+		"branch_id": user.BranchID,
+		"role":      string(user.Role),
+		"exp":       time.Now().Add(s.accessDuration).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(s.jwtSecret))

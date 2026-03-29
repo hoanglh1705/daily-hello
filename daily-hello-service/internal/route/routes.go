@@ -72,4 +72,26 @@ func registerProtectedRoutes(g *echo.Group) {
 	branchWifiGroup.GET("/branch/:branch_id", branchWifiHandler.GetByBranchID)
 	branchWifiGroup.PUT("/:id", branchWifiHandler.Update)
 	branchWifiGroup.DELETE("/:id", branchWifiHandler.Delete)
+
+	// Attendance routes
+	attendanceHandler := diregistry.GetDependency(diregistry.AttendanceAPIDIName).(*handlers.AttendanceHandler)
+	attendanceGroup := g.Group("/attendance")
+	attendanceGroup.POST("/check-in", attendanceHandler.CheckIn)
+	attendanceGroup.POST("/check-out", attendanceHandler.CheckOut)
+	attendanceGroup.GET("/history", attendanceHandler.GetHistory)
+	attendanceGroup.GET("/today", attendanceHandler.GetToday)
+	attendanceGroup.GET("/:id", attendanceHandler.GetByID)
+
+	// Device routes (user)
+	deviceHandler := diregistry.GetDependency(diregistry.DeviceAPIDIName).(*handlers.DeviceHandler)
+	deviceGroup := g.Group("/devices")
+	deviceGroup.POST("/register", deviceHandler.Register)
+	deviceGroup.GET("/status", deviceHandler.GetStatus)
+	deviceGroup.GET("", deviceHandler.ListMyDevices)
+
+	// Device admin routes
+	adminGroup := g.Group("/admin")
+	adminGroup.GET("/devices", deviceHandler.AdminList)
+	adminGroup.PUT("/devices/:id/approve", deviceHandler.Approve)
+	adminGroup.PUT("/devices/:id/reject", deviceHandler.Reject)
 }
