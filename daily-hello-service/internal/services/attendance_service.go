@@ -29,7 +29,7 @@ func NewAttendanceService(
 	}
 }
 
-func (s *AttendanceService) CheckIn(ctx context.Context, userID uint, req models.CheckInRequest) (*models.Attendance, error) {
+func (s *AttendanceService) CheckIn(ctx context.Context, userID uint, req models.AttendanceRequest) (*models.Attendance, error) {
 	// 1. Fetch branch
 	branch, err := s.branchRepo.FindByID(ctx, req.BranchID)
 	if err != nil {
@@ -74,7 +74,7 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID uint, req models
 	return att, nil
 }
 
-func (s *AttendanceService) CheckOut(ctx context.Context, userID uint, req models.CheckOutRequest) (*models.Attendance, error) {
+func (s *AttendanceService) CheckOut(ctx context.Context, userID uint, req models.AttendanceRequest) (*models.Attendance, error) {
 	// 1. Verify checked in today
 	att, err := s.repo.FindTodayCheckIn(ctx, userID)
 	if err != nil {

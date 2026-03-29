@@ -25,12 +25,12 @@ class Attendance {
     return Attendance(
       id: json['id']?.toString() ?? '',
       userId: json['user_id']?.toString() ?? '',
-      checkIn: DateTime.parse(json['check_in']),
-      checkOut: json['check_out'] != null
-          ? DateTime.parse(json['check_out'])
+      checkIn: DateTime.parse(json['check_in_time']),
+      checkOut: json['check_out_time'] != null
+          ? DateTime.parse(json['check_out_time'])
           : null,
-      lat: (json['lat'] as num?)?.toDouble(),
-      lng: (json['lng'] as num?)?.toDouble(),
+      lat: (json['check_in_lat'] as num?)?.toDouble(),
+      lng: (json['check_in_lng'] as num?)?.toDouble(),
       wifiSsid: json['wifi_ssid'],
       wifiBssid: json['wifi_bssid'],
       status: json['status'] ?? 'present',

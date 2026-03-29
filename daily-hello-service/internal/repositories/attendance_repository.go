@@ -83,10 +83,10 @@ func (r *AttendanceRepository) List(ctx context.Context, filter models.Attendanc
 		query = query.Where("branch_id = ?", filter.BranchID)
 	}
 	if filter.DateFrom != "" {
-		query = query.Where("check_in_time >= ?", filter.DateFrom)
+		query = query.Where("created_at >= ?", filter.DateFrom)
 	}
 	if filter.DateTo != "" {
-		query = query.Where("check_in_time <= ?", filter.DateTo)
+		query = query.Where("created_at <= ?", filter.DateTo)
 	}
 	if filter.Status != "" {
 		query = query.Where("status = ?", filter.Status)
@@ -98,7 +98,7 @@ func (r *AttendanceRepository) List(ctx context.Context, filter models.Attendanc
 
 	err := query.
 		Preload("User").Preload("Branch").
-		Order("check_in_time DESC").
+		Order("created_at DESC").
 		Offset(pq.GetOffset()).
 		Limit(pq.GetLimit()).
 		Find(&items).Error

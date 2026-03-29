@@ -24,13 +24,13 @@ func NewAttendanceHandler(service *services.AttendanceService) *AttendanceHandle
 // @Tags Attendance
 // @Accept json
 // @Produce json
-// @Param request body models.CheckInRequest true "Check in data"
+// @Param request body models.AttendanceRequest true "Attendance request data"
 // @Success 201 {object} response.Response{data=models.Attendance} "Check in successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Internal server error"
-// @Router /v1/auth/attendance/check-in [post]
+// @Router /v1/attendance/check-in [post]
 func (h *AttendanceHandler) CheckIn(c echo.Context) error {
-	var req models.CheckInRequest
+	var req models.AttendanceRequest
 	if err := c.Bind(&req); err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
 	}
@@ -47,7 +47,7 @@ func (h *AttendanceHandler) CheckIn(c echo.Context) error {
 		return response.HandleError(c, err)
 	}
 
-	return response.Created(c, result)
+	return response.Success(c, result)
 }
 
 // @Summary Check Out
@@ -55,13 +55,13 @@ func (h *AttendanceHandler) CheckIn(c echo.Context) error {
 // @Tags Attendance
 // @Accept json
 // @Produce json
-// @Param request body models.CheckOutRequest true "Check out data"
+// @Param request body models.AttendanceRequest true "Attendance request data"
 // @Success 201 {object} response.Response{data=models.Attendance} "Check out successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Internal server error"
-// @Router /v1/auth/attendance/check-out [post]
+// @Router /v1/attendance/check-out [post]
 func (h *AttendanceHandler) CheckOut(c echo.Context) error {
-	var req models.CheckOutRequest
+	var req models.AttendanceRequest
 	if err := c.Bind(&req); err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
 	}
@@ -70,6 +70,8 @@ func (h *AttendanceHandler) CheckOut(c echo.Context) error {
 	}
 
 	userID := c.Get("user_id").(float64)
+	branchID := c.Get("branch_id").(float64)
+	req.BranchID = uint(branchID)
 
 	result, err := h.service.CheckOut(c.Request().Context(), uint(userID), req)
 	if err != nil {
@@ -88,7 +90,7 @@ func (h *AttendanceHandler) CheckOut(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.PaginatedResponse} "Get attendance history successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Internal server error"
-// @Router /v1/auth/attendance/history [get]
+// @Router /v1/attendance/history [get]
 func (h *AttendanceHandler) GetHistory(c echo.Context) error {
 	var pq models.PaginationQuery
 	if err := c.Bind(&pq); err != nil {
@@ -98,6 +100,19 @@ func (h *AttendanceHandler) GetHistory(c echo.Context) error {
 	var filter models.AttendanceFilter
 	if err := c.Bind(&filter); err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	var dateRange struct {
+		From string `query:"from"`
+		To   string `query:"to"`
+	}
+	if err := c.Bind(&dateRange); err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	if filter.DateFrom == "" {
+		filter.DateFrom = dateRange.From
+	}
+	if filter.DateTo == "" {
+		filter.DateTo = dateRange.To
 	}
 
 	result, err := h.service.GetHistory(c.Request().Context(), filter, pq)

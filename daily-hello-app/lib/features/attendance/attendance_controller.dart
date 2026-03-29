@@ -109,19 +109,16 @@ class AttendanceController extends ChangeNotifier {
       hasMore = true;
       history = [];
     }
-    if (!hasMore) return;
+    if (!hasMore || isLoadingHistory) return;
 
     isLoadingHistory = true;
     notifyListeners();
 
     try {
       final result = await _service.getHistory(page: currentPage);
-      if (result.isEmpty) {
-        hasMore = false;
-      } else {
-        history.addAll(result);
-        currentPage++;
-      }
+      history.addAll(result.items);
+      currentPage++;
+      hasMore = history.length < result.total;
     } catch (error) {
       errorMessage = getApiErrorMessage(error) ??
           'Lỗi tải lịch sử: ${_formatError(error)}';

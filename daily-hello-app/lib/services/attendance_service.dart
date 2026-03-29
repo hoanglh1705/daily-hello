@@ -17,17 +17,9 @@ class AttendanceService {
     String? wifiSsid,
     String? wifiBssid,
   }) async {
-    final deviceId = await _getDeviceId();
-    final res = await dio.post('/v1/attendance/check-in', data: {
-      'lat': lat,
-      'lng': lng,
-      'wifi_ssid': wifiSsid,
-      'wifi_bssid': wifiBssid,
-      'device_id': deviceId,
-    });
-    return Attendance.fromJson(
-      unwrapApiData(res.data) as Map<String, dynamic>,
-    );
+    final payload = await _buildPayload(lat: lat, lng: lng, wifiSsid: wifiSsid, wifiBssid: wifiBssid);
+    final res = await dio.post('/v1/attendance/check-in', data: payload);
+    return Attendance.fromJson(unwrapApiData(res.data) as Map<String, dynamic>);
   }
 
   Future<Attendance> checkOut({
@@ -36,17 +28,25 @@ class AttendanceService {
     String? wifiSsid,
     String? wifiBssid,
   }) async {
+    final payload = await _buildPayload(lat: lat, lng: lng, wifiSsid: wifiSsid, wifiBssid: wifiBssid);
+    final res = await dio.post('/v1/attendance/check-out', data: payload);
+    return Attendance.fromJson(unwrapApiData(res.data) as Map<String, dynamic>);
+  }
+
+  Future<Map<String, dynamic>> _buildPayload({
+    required double lat,
+    required double lng,
+    String? wifiSsid,
+    String? wifiBssid,
+  }) async {
     final deviceId = await _getDeviceId();
-    final res = await dio.post('/v1/attendance/check-out', data: {
+    return {
       'lat': lat,
       'lng': lng,
       'wifi_ssid': wifiSsid,
       'wifi_bssid': wifiBssid,
       'device_id': deviceId,
-    });
-    return Attendance.fromJson(
-      unwrapApiData(res.data) as Map<String, dynamic>,
-    );
+    };
   }
 
   Future<String?> _getDeviceId() async {
@@ -65,20 +65,26 @@ class AttendanceService {
     return null;
   }
 
-  Future<List<Attendance>> getHistory({
+  Future<({List<Attendance> items, int total})> getHistory({
     String? from,
     String? to,
     int page = 1,
     int limit = 20,
   }) async {
-    final res = await dio.get('/v1/attendance', queryParameters: {
+    final res = await dio.get('/v1/attendance/history', queryParameters: {
       'from': from,
       'to': to,
       'page': page,
       'limit': limit,
     });
-    final list = unwrapApiData(res.data) as List<dynamic>;
-    return list.map((e) => Attendance.fromJson(e as Map<String, dynamic>)).toList();
+    final data = unwrapApiData(res.data) as Map<String, dynamic>;
+    final list = data['items'] as List<dynamic>? ?? [];
+    final meta = data['meta'] as Map<String, dynamic>? ?? {};
+    final total = (meta['total'] as num?)?.toInt() ?? 0;
+    return (
+      items: list.map((e) => Attendance.fromJson(e as Map<String, dynamic>)).toList(),
+      total: total,
+    );
   }
 
   Future<Attendance?> getTodayAttendance() async {
