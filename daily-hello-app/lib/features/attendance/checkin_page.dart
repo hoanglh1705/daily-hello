@@ -1,10 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
-import 'package:wifi_signal_strength_indicator/wifi_signal_strength_indicator.dart';
 import 'attendance_controller.dart';
 import '../../widgets/app_button.dart';
-import '../../widgets/app_card.dart';
 import '../../core/utils/date_format_utils.dart';
 
 class CheckInPage extends StatefulWidget {
@@ -15,6 +15,9 @@ class CheckInPage extends StatefulWidget {
 }
 
 class _CheckInPageState extends State<CheckInPage> {
+  late Timer _clockTimer;
+  DateTime _now = DateTime.now();
+
   bool _isLocationError(String message) {
     final normalized = message.toLowerCase();
     return normalized.contains('vi tri') ||
@@ -181,11 +184,21 @@ class _CheckInPageState extends State<CheckInPage> {
   @override
   void initState() {
     super.initState();
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() => _now = DateTime.now());
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final controller = context.read<AttendanceController>();
       controller.loadTodayAttendance();
       controller.loadWifiInfo();
+      controller.loadHistory(refresh: true);
     });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer.cancel();
+    super.dispose();
   }
 
   @override
@@ -193,101 +206,201 @@ class _CheckInPageState extends State<CheckInPage> {
     final controller = context.watch<AttendanceController>();
     final today = controller.todayAttendance;
     final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chấm công'),
         centerTitle: true,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            AppCard(
-              child: Column(
-                children: [
-                  Text(
-                    DateFormatUtils.formatDate(DateTime.now()),
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 8),
-                  _StatusBadge(today: today),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _TimeInfo(
-                        label: 'Check-in',
-                        time: today != null
-                            ? DateFormatUtils.formatTime(today.checkIn)
-                            : '--:--',
-                        color: Colors.green,
-                      ),
-                      Container(
-                          width: 1, height: 40, color: Colors.grey[300]),
-                      _TimeInfo(
-                        label: 'Check-out',
-                        time: today?.checkOut != null
-                            ? DateFormatUtils.formatTime(today!.checkOut!)
-                            : '--:--',
-                        color: Colors.red,
-                      ),
-                      Container(
-                          width: 1, height: 40, color: Colors.grey[300]),
-                      _TimeInfo(
-                        label: 'Tổng giờ',
-                        time: DateFormatUtils.formatDuration(
-                          today?.checkIn ?? DateTime.now(),
-                          today?.checkOut,
-                        ),
-                        color: theme.colorScheme.primary,
-                      ),
-                    ],
+            // Main attendance card
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withAlpha(25),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
                   ),
                 ],
+                border: Border.all(
+                  color: primaryColor.withAlpha(30),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                child: Column(
+                  children: [
+                    // Date
+                    Text(
+                      DateFormatUtils.formatVietnameseDate(_now),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[500],
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Live clock
+                    _LiveClock(now: _now, primaryColor: primaryColor),
+                    const SizedBox(height: 12),
+
+                    // WiFi location badge
+                    if (controller.wifiSsid != null &&
+                        controller.wifiSsid!.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.wifi,
+                                size: 16, color: primaryColor),
+                            const SizedBox(width: 6),
+                            Text(
+                              controller.wifiSsid!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 20),
+
+                    // Check-in / Check-out time boxes
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _TimeBox(
+                            label: 'GIỜ CHECK-IN',
+                            time: today != null
+                                ? DateFormatUtils.formatTime(today.checkIn)
+                                : '--:--',
+                            primaryColor: primaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _TimeBox(
+                            label: 'GIỜ CHECK-OUT',
+                            time: today?.checkOut != null
+                                ? DateFormatUtils.formatTime(today!.checkOut!)
+                                : '--:--',
+                            primaryColor: primaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Action buttons (always visible)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ActionButton(
+                            label: 'Check-in',
+                            icon: Icons.login,
+                            isActive: true,
+                            isLoading: controller.isLoading && today == null,
+                            primaryColor: primaryColor,
+                            onPressed: !controller.isLoading
+                                ? _handleCheckIn
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _ActionButton(
+                            label: 'Check-out',
+                            icon: Icons.logout,
+                            isActive: today != null,
+                            isLoading: controller.isLoading &&
+                                today != null,
+                            primaryColor: primaryColor,
+                            onPressed: today != null && !controller.isLoading
+                                ? _handleCheckOut
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (today != null && today.isCheckedOut) ...[
+                      const SizedBox(height: 14),
+                      _CompletedBadge(primaryColor: primaryColor),
+                    ],
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            _WifiInfoCard(
-              ssid: controller.wifiSsid,
-              signalStrength: controller.wifiSignalStrength,
-              signalLevel: controller.wifiSignalLevel,
-              onRefresh: () => controller.loadWifiInfo(),
+            const SizedBox(height: 28),
+
+            // Recent activity header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Hoạt động gần đây',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, '/history');
+                  },
+                  child: Text(
+                    'Xem tất cả',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: primaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-            if (today == null || !today.isCheckedOut) ...[
-              if (today == null)
-                AppButton(
-                  label: 'Check In',
-                  icon: Icons.login,
-                  isLoading: controller.isLoading,
-                  onPressed: controller.isLoading ? null : _handleCheckIn,
+            const SizedBox(height: 16),
+
+            // Recent activity list
+            if (controller.history.isEmpty &&
+                !controller.isLoadingHistory)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  'Chưa có hoạt động',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey,
+                  ),
                 ),
-              if (today != null && !today.isCheckedOut)
-                AppButton(
-                  label: 'Check Out',
-                  icon: Icons.logout,
-                  color: Colors.red,
-                  isLoading: controller.isLoading,
-                  onPressed: controller.isLoading ? null : _handleCheckOut,
-                ),
-            ] else
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('Đã hoàn thành chấm công hôm nay',
-                        style: TextStyle(color: Colors.green)),
-                  ],
+              )
+            else
+              ...controller.history.take(4).map(
+                    (item) => _RecentActivityItem(
+                      item: item,
+                      primaryColor: primaryColor,
+                    ),
+                  ),
+            if (controller.isLoadingHistory)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
                 ),
               ),
           ],
@@ -297,212 +410,355 @@ class _CheckInPageState extends State<CheckInPage> {
   }
 }
 
-class _WifiInfoCard extends StatelessWidget {
-  final String? ssid;
-  final int? signalStrength;
-  final int? signalLevel;
-  final VoidCallback onRefresh;
+class _LiveClock extends StatelessWidget {
+  final DateTime now;
+  final Color primaryColor;
 
-  const _WifiInfoCard({
-    required this.ssid,
-    required this.signalStrength,
-    required this.signalLevel,
-    required this.onRefresh,
-  });
-
-  String _signalLabel(int? level) {
-    switch (level) {
-      case 4:
-        return 'Rất mạnh';
-      case 3:
-        return 'Mạnh';
-      case 2:
-        return 'Trung bình';
-      case 1:
-        return 'Yếu';
-      default:
-        return 'Không xác định';
-    }
-  }
-
-  Color _signalColor(int? level) {
-    switch (level) {
-      case 4:
-        return Colors.green;
-      case 3:
-        return Colors.lightGreen;
-      case 2:
-        return Colors.orange;
-      case 1:
-        return Colors.deepOrange;
-      default:
-        return Colors.grey;
-    }
-  }
+  const _LiveClock({required this.now, required this.primaryColor});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isConnected = ssid != null && ssid!.isNotEmpty;
+    final hours = now.hour.toString().padLeft(2, '0');
+    final minutes = now.minute.toString().padLeft(2, '0');
+    final seconds = now.second.toString().padLeft(2, '0');
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                isConnected ? Icons.wifi : Icons.wifi_off,
-                color: isConnected ? _signalColor(signalLevel) : Colors.grey,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Thông tin WiFi',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              InkWell(
-                onTap: onRefresh,
-                borderRadius: BorderRadius.circular(20),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.refresh, size: 18, color: Colors.grey),
-                ),
-              ),
-            ],
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          '$hours:$minutes',
+          style: TextStyle(
+            fontSize: 56,
+            fontWeight: FontWeight.w700,
+            color: primaryColor,
+            height: 1,
           ),
-          const SizedBox(height: 12),
-          if (!isConnected)
-            Text(
-              'Không kết nối WiFi',
-              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
-            )
-          else ...[
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Tên WiFi',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        ssid ?? '--',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Cường độ',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (signalStrength != null)
-                          WifiSignalStrengthIndicator(
-                            rssi: signalStrength,
-                            style: WifiSignalStyle.bars,
-                            size: 18,
-                          ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _signalLabel(signalLevel),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: _signalColor(signalLevel),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+        ),
+        Text(
+          ':$seconds',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w500,
+            color: primaryColor.withAlpha(150),
+            height: 1,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TimeBox extends StatelessWidget {
+  final String label;
+  final String time;
+  final Color primaryColor;
+
+  const _TimeBox({
+    required this.label,
+    required this.time,
+    required this.primaryColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[500],
+              letterSpacing: 0.8,
             ),
-            if (signalStrength != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                '$signalStrength dBm',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[500],
-                ),
-              ),
-            ],
-          ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            time,
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              color: primaryColor,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  final dynamic today;
-  const _StatusBadge({this.today});
-
-  @override
-  Widget build(BuildContext context) {
-    if (today == null) {
-      return _badge('Chưa check-in', Colors.grey);
-    } else if (!today.isCheckedOut) {
-      return _badge('Đang làm việc', Colors.green);
-    } else {
-      return _badge('Đã check-out', Colors.blue);
-    }
-  }
-
-  Widget _badge(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withAlpha(30),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color),
-      ),
-      child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
-    );
-  }
-}
-
-class _TimeInfo extends StatelessWidget {
+class _ActionButton extends StatelessWidget {
   final String label;
-  final String time;
-  final Color color;
+  final IconData icon;
+  final bool isActive;
+  final bool isLoading;
+  final Color primaryColor;
+  final VoidCallback? onPressed;
 
-  const _TimeInfo({
+  const _ActionButton({
     required this.label,
-    required this.time,
-    required this.color,
+    required this.icon,
+    required this.isActive,
+    required this.isLoading,
+    required this.primaryColor,
+    this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final color = isActive ? primaryColor : Colors.grey[400]!;
+
+    return OutlinedButton(
+      onPressed: isLoading ? null : onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        side: BorderSide(color: color),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      child: isLoading
+          ? SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: color,
+              ),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _CompletedBadge extends StatelessWidget {
+  final Color primaryColor;
+
+  const _CompletedBadge({required this.primaryColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(time,
-            style: TextStyle(
-                fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-        Text(label,
-            style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Icon(Icons.check_circle, color: Colors.green[600], size: 22),
+        const SizedBox(width: 8),
+        Text(
+          'Đã hoàn thành check-out',
+          style: TextStyle(
+            color: Colors.green[600],
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
       ],
     );
+  }
+}
+
+class _RecentActivityItem extends StatelessWidget {
+  final dynamic item;
+  final Color primaryColor;
+
+  const _RecentActivityItem({
+    required this.item,
+    required this.primaryColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final checkInTime = DateFormatUtils.formatTime(item.checkIn);
+    final checkOutTime = item.checkOut != null
+        ? DateFormatUtils.formatTime(item.checkOut!)
+        : null;
+    final dateLabel = DateFormatUtils.formatVietnameseDateShort(item.checkIn);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(10),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        children: [
+          // Check-in row
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: primaryColor.withAlpha(20),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.login,
+                  color: primaryColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Check-in sáng',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      dateLabel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    checkInTime,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _getCheckInStatus(item),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _getStatusColor(item),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (checkOutTime != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Divider(height: 1, color: Colors.grey[200]),
+            ),
+            // Check-out row
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.green.withAlpha(20),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.logout,
+                    color: Colors.green,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Check-out chiều',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        dateLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      checkOutTime,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'HOÀN THÀNH',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _getCheckInStatus(dynamic item) {
+    final hour = item.checkIn.hour;
+    if (hour < 8) return 'SỚM';
+    if (hour == 8 && item.checkIn.minute <= 15) return 'ĐÚNG GIỜ';
+    return 'MUỘN';
+  }
+
+  Color _getStatusColor(dynamic item) {
+    final hour = item.checkIn.hour;
+    if (hour < 8) return Colors.blue;
+    if (hour == 8 && item.checkIn.minute <= 15) return Colors.green[600]!;
+    return Colors.orange[700]!;
   }
 }

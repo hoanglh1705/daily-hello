@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"strconv"
 
 	"daily-hello-service/internal/models"
@@ -29,10 +28,9 @@ func NewBranchHandler(service *services.BranchService) *BranchHandler {
 // @Success 201 {object} response.Response{data=models.Branch} "Create Branch successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Internal server error"
-// @Router /v1/auth/branches [post]
+// @Router /v1/branches [post]
 func (h *BranchHandler) Create(c echo.Context) error {
 	var req models.CreateBranchRequest
-	fmt.Println("hello")
 	if err := c.Bind(&req); err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
 	}
@@ -57,7 +55,7 @@ func (h *BranchHandler) Create(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.Branch} "Get Branch successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Internal server error"
-// @Router /v1/auth/branches/{id} [get]
+// @Router /v1/branches/{id} [get]
 func (h *BranchHandler) GetByID(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -82,7 +80,7 @@ func (h *BranchHandler) GetByID(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.Branch} "Update Branch successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Internal server error"
-// @Router /v1/auth/branches/{id} [put]
+// @Router /v1/branches/{id} [put]
 func (h *BranchHandler) Update(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -111,7 +109,7 @@ func (h *BranchHandler) Update(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.Branch} "Delete Branch successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Internal server error"
-// @Router /v1/auth/branches/{id} [delete]
+// @Router /v1/branches/{id} [delete]
 func (h *BranchHandler) Delete(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -133,7 +131,7 @@ func (h *BranchHandler) Delete(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.PaginatedResponse} "List Branch successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Internal server error"
-// @Router /v1/auth/branches [get]
+// @Router /v1/branches [get]
 func (h *BranchHandler) List(c echo.Context) error {
 	var pq models.PaginationQuery
 	if err := c.Bind(&pq); err != nil {
