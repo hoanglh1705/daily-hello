@@ -275,43 +275,43 @@ func migrateTable() []*gormigrate.Migration {
 
 	// Update attendances table with new checkin and checkout fields
 	migrations = append(migrations, &gormigrate.Migration{
-		ID: "202603301109",
+		ID: "202603301509",
 		Migrate: func(tx *gorm.DB) error {
-			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS checkin_type VARCHAR(20)`).Error; err != nil {
+			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS check_in_type VARCHAR(20)`).Error; err != nil {
 				return err
 			}
-			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS checkout_type VARCHAR(20)`).Error; err != nil {
+			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS check_out_type VARCHAR(20)`).Error; err != nil {
 				return err
 			}
-			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS checkout_status VARCHAR(20)`).Error; err != nil {
+			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS check_out_status VARCHAR(20)`).Error; err != nil {
 				return err
 			}
-			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS checkout_device_id VARCHAR(100)`).Error; err != nil {
+			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS check_out_device_id VARCHAR(100)`).Error; err != nil {
 				return err
 			}
-			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS checkout_wifi_bssid VARCHAR(100)`).Error; err != nil {
+			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS check_out_wifi_bssid VARCHAR(100)`).Error; err != nil {
 				return err
 			}
-			if err := tx.Exec(`ALTER TABLE attendances RENAME COLUMN status TO checkin_status`).Error; err != nil {
+			if err := tx.Exec(`ALTER TABLE attendances RENAME COLUMN status TO check_in_status`).Error; err != nil {
 				return err
 			}
-			if err := tx.Exec(`ALTER TABLE attendances RENAME COLUMN device_id TO checkin_device_id`).Error; err != nil {
+			if err := tx.Exec(`ALTER TABLE attendances RENAME COLUMN device_id TO check_in_device_id`).Error; err != nil {
 				return err
 			}
-			if err := tx.Exec(`ALTER TABLE attendances RENAME COLUMN wifi_bssid TO checkin_wifi_bssid`).Error; err != nil {
+			if err := tx.Exec(`ALTER TABLE attendances RENAME COLUMN wifi_bssid TO check_in_wifi_bssid`).Error; err != nil {
 				return err
 			}
 			return nil
 		},
 		Rollback: func(tx *gorm.DB) error {
-			tx.Exec(`ALTER TABLE attendances RENAME COLUMN checkin_status TO status`)
-			tx.Exec(`ALTER TABLE attendances RENAME COLUMN checkin_device_id TO device_id`)
-			tx.Exec(`ALTER TABLE attendances RENAME COLUMN checkin_wifi_bssid TO wifi_bssid`)
-			tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS checkout_wifi_bssid`)
-			tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS checkout_device_id`)
-			tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS checkout_status`)
-			tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS checkout_type`)
-			tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS checkin_type`)
+			tx.Exec(`ALTER TABLE attendances RENAME COLUMN check_in_status TO status`)
+			tx.Exec(`ALTER TABLE attendances RENAME COLUMN check_in_device_id TO device_id`)
+			tx.Exec(`ALTER TABLE attendances RENAME COLUMN check_in_wifi_bssid TO wifi_bssid`)
+			tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS check_out_wifi_bssid`)
+			tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS check_out_device_id`)
+			tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS check_out_status`)
+			tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS check_out_type`)
+			tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS check_in_type`)
 			return nil
 		},
 	})

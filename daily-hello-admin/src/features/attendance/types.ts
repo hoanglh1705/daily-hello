@@ -20,7 +20,11 @@ export type Attendance = {
   user: AttendanceUser
   branch: Branch
   check_in_time: string
+  check_in_type: string
+  check_in_status: string
   check_out_time: string | null
+  check_out_type: string
+  check_out_status: string
   check_in_lat: number
   check_in_lng: number
   check_out_lat: number | null

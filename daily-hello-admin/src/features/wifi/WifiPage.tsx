@@ -73,7 +73,7 @@ export default function WifiPage() {
     fetchData()
   }
 
-  const handleSubmit = async (formData: { ssid: string; bssid: string; branch_id: number }) => {
+  const handleSubmit = async (formData: {name: string, code: string, ssid: string; bssid: string; branch_id: number }) => {
     await createWifi(formData)
     setModalOpen(false)
     fetchData()

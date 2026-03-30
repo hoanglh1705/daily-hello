@@ -12,8 +12,13 @@ type Props = {
 export default function BranchTable({ data, loading, onEdit, onDelete }: Props) {
   const columns = [
     { key: 'id', title: 'ID' },
-    { key: 'name', title: 'Ten chi nhanh' },
-    { key: 'address', title: 'Dia chi' },
+    { key: 'name', title: 'Name' },
+    { key: 'branch_code', title: 'Branch Code' },
+    { key: 'parent_branch_code', title: 'Parent Branch Code' },
+    { key: 'address', title: 'Address' },
+    { key: 'lat', title: 'Latitude' },
+    { key: 'lng', title: 'Longitude' },
+    { key: 'status', title: 'Status' },
     {
       key: 'created_at',
       title: 'Ngay tao',

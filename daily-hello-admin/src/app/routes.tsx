@@ -5,6 +5,7 @@ import DashboardPage from '@/features/dashboard/DashboardPage'
 import BranchPage from '@/features/branch/BranchPage'
 import WifiPage from '@/features/wifi/WifiPage'
 import AttendancePage from '@/features/attendance/AttendancePage'
+import UserPage from '@/features/user/UserPage'
 import { isAuthenticated } from '@/services/tokenStorage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: '/', element: <DashboardPage /> },
+      { path: '/users', element: <UserPage /> },
       { path: '/branches', element: <BranchPage /> },
       { path: '/wifi', element: <WifiPage /> },
       { path: '/attendance', element: <AttendancePage /> },

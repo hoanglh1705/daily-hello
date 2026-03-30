@@ -61,6 +61,10 @@ func (r *AttendanceRepository) UpdateCheckOut(ctx context.Context, id uint, upda
 	return r.db.WithContext(ctx).Model(&models.Attendance{}).Where("id = ?", id).Updates(updates).Error
 }
 
+func (r *AttendanceRepository) UpdateStatus(ctx context.Context, id uint, updates map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&models.Attendance{}).Where("id = ?", id).Updates(updates).Error
+}
+
 func (r *AttendanceRepository) List(ctx context.Context, filter models.AttendanceFilter, pq models.PaginationQuery) ([]models.Attendance, int64, error) {
 	var items []models.Attendance
 	var total int64

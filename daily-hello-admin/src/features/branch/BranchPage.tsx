@@ -80,7 +80,7 @@ export default function BranchPage() {
         loading={loading}
         onEdit={handleEdit}
         onDelete={handleDelete}
-      />v1/branch-wifi
+      />
 
       <Pagination
         page={page}

@@ -8,12 +8,14 @@ type Props<T> = {
   columns: Column<T>[]
   data: T[]
   loading?: boolean
+  getRowClassName?: (item: T, index: number) => string | undefined
 }
 
 export default function Table<T extends { id: string | number }>({
   columns,
   data,
   loading,
+  getRowClassName,
 }: Props<T>) {
   if (loading) {
     return <div className="table-loading">Loading...</div>
@@ -36,8 +38,8 @@ export default function Table<T extends { id: string | number }>({
             </td>
           </tr>
         ) : (
-          data.map((item) => (
-            <tr key={item.id}>
+          data.map((item, index) => (
+            <tr key={item.id} className={getRowClassName?.(item, index)}>
               {columns.map((col) => (
                 <td key={col.key}>
                   {col.render

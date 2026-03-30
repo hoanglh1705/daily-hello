@@ -85,8 +85,8 @@ func (s *UserService) Update(ctx context.Context, id uint, req models.UpdateUser
 	return user, nil
 }
 
-func (s *UserService) List(ctx context.Context, pq models.PaginationQuery) (*models.PaginatedResponse, error) {
-	items, total, err := s.repo.List(ctx, pq)
+func (s *UserService) List(ctx context.Context, q models.UserListQuery) (*models.PaginatedResponse, error) {
+	items, total, err := s.repo.List(ctx, q)
 	if err != nil {
 		return nil, appErrors.ErrInternal
 	}
@@ -94,8 +94,8 @@ func (s *UserService) List(ctx context.Context, pq models.PaginationQuery) (*mod
 	return &models.PaginatedResponse{
 		Items: items,
 		Meta: models.PaginationMeta{
-			Page:  pq.GetPage(),
-			Limit: pq.GetLimit(),
+			Page:  q.GetPage(),
+			Limit: q.GetLimit(),
 			Total: total,
 		},
 	}, nil

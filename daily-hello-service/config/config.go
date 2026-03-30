@@ -34,6 +34,7 @@ type (
 		AutoMigration   bool              `mapstructure:"auto_migration"`
 		Cache           cacheConfig       `mapstructure:"cache"`
 		JwtConfig       jwtConfig         `mapstructure:"jwt_config"`
+		Timezone        string            `mapstructure:"timezone"`
 	}
 
 	databaseConfig struct {

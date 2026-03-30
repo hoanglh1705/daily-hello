@@ -61,8 +61,10 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID uint, req models
 	checkInLat := req.Lat
 	checkInLng := req.Lng
 	checkInType := "gps"
+	checkInStatus := models.StatusWaitingApprove
 	if validWifi {
 		checkInType = "wifi"
+		checkInStatus = models.StatusApproved
 	}
 
 	att := &models.Attendance{
@@ -74,7 +76,7 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID uint, req models
 		CheckInWifiBSSID: req.WifiBSSID,
 		CheckInDeviceID:  req.DeviceID,
 		CheckInType:      checkInType,
-		CheckInStatus:    models.StatusOnTime, // TODO: compute based on shift schedule
+		CheckInStatus:    checkInStatus,
 	}
 
 	if err := s.repo.Create(ctx, att); err != nil {
@@ -107,8 +109,10 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID uint, req model
 
 	// 4. Update check-out on existing record
 	checkOutType := "gps"
+	checkOutStatus := models.StatusWaitingApprove
 	if validWifi {
 		checkOutType = "wifi"
+		checkOutStatus = models.StatusApproved
 	}
 
 	now := time.Now().In(s.timezone)
@@ -116,13 +120,13 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID uint, req model
 	checkOutLng := req.Lng
 
 	updates := map[string]interface{}{
-		"check_out_time":      now,
-		"check_out_lat":       checkOutLat,
-		"check_out_lng":       checkOutLng,
-		"checkout_wifi_bssid": req.WifiBSSID,
-		"checkout_device_id":  req.DeviceID,
-		"checkout_type":       checkOutType,
-		"checkout_status":     models.StatusOnTime, // TODO: compute
+		"check_out_time":       now,
+		"check_out_lat":        checkOutLat,
+		"check_out_lng":        checkOutLng,
+		"check_out_wifi_bssid": req.WifiBSSID,
+		"check_out_device_id":  req.DeviceID,
+		"check_out_type":       checkOutType,
+		"check_out_status":     checkOutStatus,
 	}
 
 	if err := s.repo.UpdateCheckOut(ctx, att.ID, updates); err != nil {
@@ -135,7 +139,7 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID uint, req model
 	att.CheckOutType = checkOutType
 	att.CheckOutWifiBSSID = req.WifiBSSID
 	att.CheckOutDeviceID = req.DeviceID
-	att.CheckOutStatus = models.StatusOnTime
+	att.CheckOutStatus = checkOutStatus
 
 	return att, nil
 }
@@ -165,6 +169,57 @@ func (s *AttendanceService) GetToday(ctx context.Context, userID uint) (*models.
 		}
 		return nil, appErrors.ErrInternal
 	}
+	return att, nil
+}
+
+func (s *AttendanceService) ApproveCheckIn(ctx context.Context, id uint) (*models.Attendance, error) {
+	return s.updatePendingStatus(ctx, id, "check_in_status", models.StatusApproved)
+}
+
+func (s *AttendanceService) RejectCheckIn(ctx context.Context, id uint) (*models.Attendance, error) {
+	return s.updatePendingStatus(ctx, id, "check_in_status", models.StatusRejected)
+}
+
+func (s *AttendanceService) ApproveCheckOut(ctx context.Context, id uint) (*models.Attendance, error) {
+	return s.updatePendingStatus(ctx, id, "check_out_status", models.StatusApproved)
+}
+
+func (s *AttendanceService) RejectCheckOut(ctx context.Context, id uint) (*models.Attendance, error) {
+	return s.updatePendingStatus(ctx, id, "check_out_status", models.StatusRejected)
+}
+
+func (s *AttendanceService) updatePendingStatus(ctx context.Context, id uint, field string, status models.AttendanceStatus) (*models.Attendance, error) {
+	att, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, appErrors.ErrNotFound
+		}
+		return nil, appErrors.ErrInternal
+	}
+
+	switch field {
+	case "check_in_status":
+		if att.CheckInStatus != models.StatusWaitingApprove {
+			return nil, appErrors.ErrInvalidInput
+		}
+	case "check_out_status":
+		if att.CheckOutTime == nil || att.CheckOutStatus != models.StatusWaitingApprove {
+			return nil, appErrors.ErrInvalidInput
+		}
+	default:
+		return nil, appErrors.ErrInvalidInput
+	}
+
+	if err := s.repo.UpdateStatus(ctx, id, map[string]interface{}{field: status}); err != nil {
+		return nil, appErrors.ErrInternal
+	}
+
+	if field == "check_in_status" {
+		att.CheckInStatus = status
+	} else {
+		att.CheckOutStatus = status
+	}
+
 	return att, nil
 }
 

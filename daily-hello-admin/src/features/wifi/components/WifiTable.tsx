@@ -10,9 +10,15 @@ type Props = {
 export default function WifiTable({ data, loading, onDelete }: Props) {
   const columns = [
     { key: 'id', title: 'ID' },
+    { key: 'name', title: 'Name' },
+    { key: 'code', title: 'Code' },
     { key: 'ssid', title: 'SSID' },
     { key: 'bssid', title: 'BSSID' },
-    { key: 'branch_name', title: 'Chi nhanh' },
+    {
+      key: 'branch_name',
+      title: 'Branch Name',
+      render: (item: Wifi) => item.branch_name || item.branch?.name || '',
+    },
     {
       key: 'actions',
       title: '',

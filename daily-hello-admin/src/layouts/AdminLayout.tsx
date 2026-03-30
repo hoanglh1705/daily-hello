@@ -3,6 +3,7 @@ import { clearTokens } from '@/services/tokenStorage'
 
 const navItems = [
   { to: '/', label: 'Dashboard' },
+  { to: '/users', label: 'Quan ly User' },
   { to: '/branches', label: 'Chi nhanh' },
   { to: '/wifi', label: 'WiFi' },
   { to: '/attendance', label: 'Cham cong' },

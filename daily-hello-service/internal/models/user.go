@@ -43,6 +43,12 @@ type UpdateUserRequest struct {
 	Status   string `json:"status" validate:"omitempty,oneof=active inactive"`
 }
 
+type UserListQuery struct {
+	PaginationQuery
+	BranchID *uint  `query:"branch_id"`
+	Keyword  string `query:"keyword"`
+}
+
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`

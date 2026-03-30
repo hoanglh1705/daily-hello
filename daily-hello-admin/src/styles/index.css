@@ -77,6 +77,14 @@ body {
   font-size: 14px;
 }
 
+.toolbar select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+}
+
 /* Table */
 .shared-table {
   width: 100%;
@@ -103,6 +111,85 @@ body {
 
 .shared-table td {
   font-size: 14px;
+  vertical-align: top;
+}
+
+.shared-table tbody tr {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.shared-table tbody tr.shared-table-row-even {
+  background: #f8fafc;
+  transform: translateY(3px);
+  box-shadow: inset 0 1px 0 #e2e8f0, inset 0 -1px 0 #e2e8f0;
+}
+
+.attendance-card {
+  min-width: 240px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.attendance-card-in {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border-color: #86efac;
+}
+
+.attendance-card-out {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border-color: #fdba74;
+}
+
+.attendance-card-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.attendance-card-row + .attendance-card-row {
+  margin-top: 8px;
+}
+
+.attendance-card-label {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.attendance-card a {
+  color: #0f766e;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.attendance-card a:hover {
+  text-decoration: underline;
+}
+
+.attendance-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.attendance-card-actions button {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.attendance-card-reject {
+  border-color: #fca5a5;
+  color: #b91c1c;
+  background: #fff1f2;
 }
 
 .table-loading {

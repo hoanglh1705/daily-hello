@@ -28,7 +28,7 @@ func NewUserHandler(service *services.UserService) *UserHandler {
 // @Success 201 {object} response.Response{data=models.User} "User created successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Internal server error"
-// @Router /v1/auth/user [post]
+// @Router /v1/users [post]
 func (h *UserHandler) Register(c echo.Context) error {
 	var req models.CreateUserRequest
 	if err := c.Bind(&req); err != nil {
@@ -55,7 +55,7 @@ func (h *UserHandler) Register(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.User} "User details"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 404 {object} response.Response "Not found"
-// @Router /v1/auth/user/{id} [get]
+// @Router /v1/users/{id} [get]
 func (h *UserHandler) GetByID(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -78,7 +78,7 @@ func (h *UserHandler) GetByID(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.User} "User details"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 404 {object} response.Response "Not found"
-// @Router /v1/auth/user/me [get]
+// @Router /v1/users/me [get]
 func (h *UserHandler) GetMe(c echo.Context) error {
 	userID := c.Get("user_id").(float64)
 
@@ -100,7 +100,7 @@ func (h *UserHandler) GetMe(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.User} "User updated successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 404 {object} response.Response "Not found"
-// @Router /v1/auth/user/{id} [put]
+// @Router /v1/users/{id} [put]
 func (h *UserHandler) Update(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -125,18 +125,34 @@ func (h *UserHandler) Update(c echo.Context) error {
 // @Tags User
 // @Accept json
 // @Produce json
-// @Param request body models.PaginationQuery true "Pagination query"
-// @Success 200 {object} response.Response{data=models.PaginatedResponse} "List of users"
+// @Param request body models.UserListQuery true "Pagination query"
+// @Success 200 {object} response.Response{data=models.PaginatedResponse{items=[]models.User}} "List of users"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Internal server error"
-// @Router /v1/auth/user [get]
+// @Router /v1/users [get]
 func (h *UserHandler) List(c echo.Context) error {
-	var pq models.PaginationQuery
-	if err := c.Bind(&pq); err != nil {
+	role, _ := c.Get("role").(string)
+	if role != string(models.RoleAdmin) && role != string(models.RoleManager) {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
+
+	var q models.UserListQuery
+	if err := c.Bind(&q); err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
 	}
 
-	result, err := h.service.List(c.Request().Context(), pq)
+	if role == string(models.RoleManager) {
+		branchID, err := getContextUint(c, "branch_id")
+		if err != nil {
+			return response.Error(c, appErrors.ErrInvalidInput)
+		}
+		if branchID == nil {
+			return response.Error(c, appErrors.ErrForbidden)
+		}
+		q.BranchID = branchID
+	}
+
+	result, err := h.service.List(c.Request().Context(), q)
 	if err != nil {
 		return response.HandleError(c, err)
 	}

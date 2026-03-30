@@ -35,7 +35,7 @@ func (r *branchWifiRepository) Create(ctx context.Context, wifi *models.BranchWi
 
 func (r *branchWifiRepository) FindByID(ctx context.Context, id uint) (*models.BranchWifi, error) {
 	var wifi models.BranchWifi
-	err := r.db.WithContext(ctx).First(&wifi, id).Error
+	err := r.db.WithContext(ctx).First(&wifi, id).Preload("Branch").Error
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (r *branchWifiRepository) FindAll(ctx context.Context, pq models.Pagination
 	}
 
 	var items []models.BranchWifi
-	err := query.
+	err := query.Preload("Branch").
 		Order("created_at DESC").
 		Offset(pq.GetOffset()).
 		Limit(pq.GetLimit()).
@@ -76,7 +76,7 @@ func (r *branchWifiRepository) FindByBranchIDs(ctx context.Context, branchIDs []
 	}
 
 	var items []models.BranchWifi
-	err := query.
+	err := query.Preload("Branch").
 		Order("created_at DESC").
 		Offset(pq.GetOffset()).
 		Limit(pq.GetLimit()).

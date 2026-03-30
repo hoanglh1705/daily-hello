@@ -162,3 +162,119 @@ func (h *AttendanceHandler) GetToday(c echo.Context) error {
 
 	return response.Success(c, result)
 }
+
+// @Summary Approve Check In (Admin)
+// @Description Approve pending check-in status. Admin/Manager only.
+// @Tags Attendance
+// @Produce json
+// @Param id path int true "Attendance ID"
+// @Success 200 {object} response.Response{data=models.Attendance} "Check-in approved"
+// @Failure 400 {object} response.Response "Invalid input"
+// @Failure 403 {object} response.Response "Forbidden"
+// @Failure 404 {object} response.Response "Attendance not found"
+// @Router /v1/admin/attendance/{id}/check-in/approve [put]
+func (h *AttendanceHandler) ApproveCheckIn(c echo.Context) error {
+	role, _ := c.Get("role").(string)
+	if role != "admin" && role != "manager" {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	result, err := h.service.ApproveCheckIn(c.Request().Context(), uint(id))
+	if err != nil {
+		return response.HandleError(c, err)
+	}
+
+	return response.Success(c, result)
+}
+
+// @Summary Reject Check In (Admin)
+// @Description Reject pending check-in status. Admin/Manager only.
+// @Tags Attendance
+// @Produce json
+// @Param id path int true "Attendance ID"
+// @Success 200 {object} response.Response{data=models.Attendance} "Check-in rejected"
+// @Failure 400 {object} response.Response "Invalid input"
+// @Failure 403 {object} response.Response "Forbidden"
+// @Failure 404 {object} response.Response "Attendance not found"
+// @Router /v1/admin/attendance/{id}/check-in/reject [put]
+func (h *AttendanceHandler) RejectCheckIn(c echo.Context) error {
+	role, _ := c.Get("role").(string)
+	if role != "admin" && role != "manager" {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	result, err := h.service.RejectCheckIn(c.Request().Context(), uint(id))
+	if err != nil {
+		return response.HandleError(c, err)
+	}
+
+	return response.Success(c, result)
+}
+
+// @Summary Approve Check Out (Admin)
+// @Description Approve pending check-out status. Admin/Manager only.
+// @Tags Attendance
+// @Produce json
+// @Param id path int true "Attendance ID"
+// @Success 200 {object} response.Response{data=models.Attendance} "Check-out approved"
+// @Failure 400 {object} response.Response "Invalid input"
+// @Failure 403 {object} response.Response "Forbidden"
+// @Failure 404 {object} response.Response "Attendance not found"
+// @Router /v1/admin/attendance/{id}/check-out/approve [put]
+func (h *AttendanceHandler) ApproveCheckOut(c echo.Context) error {
+	role, _ := c.Get("role").(string)
+	if role != "admin" && role != "manager" {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	result, err := h.service.ApproveCheckOut(c.Request().Context(), uint(id))
+	if err != nil {
+		return response.HandleError(c, err)
+	}
+
+	return response.Success(c, result)
+}
+
+// @Summary Reject Check Out (Admin)
+// @Description Reject pending check-out status. Admin/Manager only.
+// @Tags Attendance
+// @Produce json
+// @Param id path int true "Attendance ID"
+// @Success 200 {object} response.Response{data=models.Attendance} "Check-out rejected"
+// @Failure 400 {object} response.Response "Invalid input"
+// @Failure 403 {object} response.Response "Forbidden"
+// @Failure 404 {object} response.Response "Attendance not found"
+// @Router /v1/admin/attendance/{id}/check-out/reject [put]
+func (h *AttendanceHandler) RejectCheckOut(c echo.Context) error {
+	role, _ := c.Get("role").(string)
+	if role != "admin" && role != "manager" {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	result, err := h.service.RejectCheckOut(c.Request().Context(), uint(id))
+	if err != nil {
+		return response.HandleError(c, err)
+	}
+
+	return response.Success(c, result)
+}

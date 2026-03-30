@@ -95,4 +95,8 @@ func registerProtectedRoutes(g *echo.Group) {
 	adminGroup.GET("/devices", deviceHandler.AdminList)
 	adminGroup.PUT("/devices/:id/approve", deviceHandler.Approve)
 	adminGroup.PUT("/devices/:id/reject", deviceHandler.Reject)
+	adminGroup.PUT("/attendance/:id/check-in/approve", attendanceHandler.ApproveCheckIn)
+	adminGroup.PUT("/attendance/:id/check-in/reject", attendanceHandler.RejectCheckIn)
+	adminGroup.PUT("/attendance/:id/check-out/approve", attendanceHandler.ApproveCheckOut)
+	adminGroup.PUT("/attendance/:id/check-out/reject", attendanceHandler.RejectCheckOut)
 }

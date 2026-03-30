@@ -6,6 +6,7 @@ http_address: 8282
 allow_origins: "*"
 sensitive_fields:
   password: (?P<FIRST>[0-9]{6})(?P<MASK>[0-9]*)(?P<LAST>[0-9]{4})
+timezone: Asia/Ho_Chi_Minh
 database:
   host: localhost
   port: 5461

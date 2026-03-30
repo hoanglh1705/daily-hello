@@ -77,7 +77,7 @@ func initUseCasesBuilder() {
 					branchRepo := ctn.Get(BranchRepositoryDIName).(repositories.BranchRepository)
 					branchWifiRepo := ctn.Get(BranchWifiRepositoryDIName).(repositories.BranchWifiRepository)
 					locationService := services.NewLocationService(branchRepo, branchWifiRepo)
-					location, err := loadAttendanceTimezone(cfg.Database.Timezone)
+					location, err := loadAttendanceTimezone(cfg.Timezone)
 					if err != nil {
 						return nil, err
 					}
