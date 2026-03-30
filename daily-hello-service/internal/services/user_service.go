@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"go-libs/loghelper"
 
 	"daily-hello-service/internal/models"
 	appErrors "daily-hello-service/internal/pkg/errors"
@@ -79,6 +80,7 @@ func (s *UserService) Update(ctx context.Context, id uint, req models.UpdateUser
 	}
 
 	if err := s.repo.Update(ctx, user); err != nil {
+		loghelper.Logger.ErrorContext(ctx, "Error when update user", loghelper.Error(err))
 		return nil, appErrors.ErrInternal
 	}
 

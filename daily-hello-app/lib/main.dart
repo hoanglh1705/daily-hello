@@ -6,10 +6,12 @@ import 'core/network/api_client.dart';
 import 'core/storage/secure_storage.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/attendance/attendance_controller.dart';
+import 'features/device/device_controller.dart';
 import 'features/profile/profile_controller.dart';
 import 'services/auth_service.dart';
 import 'services/attendance_service.dart';
 import 'services/branch_service.dart';
+import 'services/device_service.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -33,6 +35,7 @@ class AppProviders extends StatelessWidget {
     final authService = AuthService(apiClient.dio);
     final attendanceService = AttendanceService(apiClient.dio);
     final branchService = BranchService(apiClient.dio);
+    final deviceService = DeviceService(apiClient.dio);
 
     return MultiProvider(
       providers: [
@@ -41,6 +44,7 @@ class AppProviders extends StatelessWidget {
         Provider<AuthService>.value(value: authService),
         Provider<AttendanceService>.value(value: attendanceService),
         Provider<BranchService>.value(value: branchService),
+        Provider<DeviceService>.value(value: deviceService),
         ChangeNotifierProvider(
           create: (_) => AuthController(authService, secureStorage),
         ),
@@ -49,6 +53,9 @@ class AppProviders extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => ProfileController(authService, secureStorage),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DeviceController(deviceService),
         ),
       ],
       child: const DailyHelloApp(),

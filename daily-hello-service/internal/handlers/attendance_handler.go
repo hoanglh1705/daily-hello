@@ -81,6 +81,38 @@ func (h *AttendanceHandler) CheckOut(c echo.Context) error {
 	return response.Created(c, result)
 }
 
+// @Summary Get My Attendance History
+// @Description Get attendance history of current user
+// @Tags Attendance
+// @Accept json
+// @Produce json
+// @Param request body models.AttendanceFilter true "Attendance filter"
+// @Success 200 {object} response.Response{data=models.PaginatedResponse} "Get my attendance history successfully"
+// @Failure 400 {object} response.Response "Invalid input"
+// @Failure 500 {object} response.Response "Internal server error"
+// @Router /v1/attendance/my-history [get]
+func (h *AttendanceHandler) GetMyHistory(c echo.Context) error {
+	var pq models.PaginationQuery
+	if err := c.Bind(&pq); err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	var filter models.AttendanceFilter
+	if err := c.Bind(&filter); err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	userID := c.Get("user_id").(float64)
+	filter.UserID = uint(userID)
+
+	result, err := h.service.GetHistory(c.Request().Context(), filter, pq)
+	if err != nil {
+		return response.HandleError(c, err)
+	}
+
+	return response.Success(c, result)
+}
+
 // @Summary Get Attendance History
 // @Description Get attendance history
 // @Tags Attendance
@@ -100,19 +132,6 @@ func (h *AttendanceHandler) GetHistory(c echo.Context) error {
 	var filter models.AttendanceFilter
 	if err := c.Bind(&filter); err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
-	}
-	var dateRange struct {
-		From string `query:"from"`
-		To   string `query:"to"`
-	}
-	if err := c.Bind(&dateRange); err != nil {
-		return response.Error(c, appErrors.ErrInvalidInput)
-	}
-	if filter.DateFrom == "" {
-		filter.DateFrom = dateRange.From
-	}
-	if filter.DateTo == "" {
-		filter.DateTo = dateRange.To
 	}
 
 	result, err := h.service.GetHistory(c.Request().Context(), filter, pq)

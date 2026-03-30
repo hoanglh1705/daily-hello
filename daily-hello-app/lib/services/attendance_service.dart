@@ -71,9 +71,9 @@ class AttendanceService {
     int page = 1,
     int limit = 20,
   }) async {
-    final res = await dio.get('/v1/attendance/history', queryParameters: {
-      'from': from,
-      'to': to,
+    final res = await dio.get('/v1/attendance/my-history', queryParameters: {
+      // 'from': from,
+      // 'to': to,
       'page': page,
       'limit': limit,
     });

@@ -79,6 +79,7 @@ func registerProtectedRoutes(g *echo.Group) {
 	attendanceGroup := g.Group("/attendance")
 	attendanceGroup.POST("/check-in", attendanceHandler.CheckIn)
 	attendanceGroup.POST("/check-out", attendanceHandler.CheckOut)
+	attendanceGroup.GET("/my-history", attendanceHandler.GetMyHistory)
 	attendanceGroup.GET("/history", attendanceHandler.GetHistory)
 	attendanceGroup.GET("/today", attendanceHandler.GetToday)
 	attendanceGroup.GET("/:id", attendanceHandler.GetByID)

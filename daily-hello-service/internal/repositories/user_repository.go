@@ -49,7 +49,10 @@ func (r *UserRepository) FindByCode(ctx context.Context, code string) (*models.U
 }
 
 func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
-	return r.db.WithContext(ctx).Save(user).Error
+	return r.db.WithContext(ctx).
+		Model(&models.User{}).
+		Where("id = ?", user.ID).
+		Updates(user).Error
 }
 
 func (r *UserRepository) List(ctx context.Context, q models.UserListQuery) ([]models.User, int64, error) {
