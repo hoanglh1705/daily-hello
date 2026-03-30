@@ -30,14 +30,12 @@ func (r *AttendanceRepository) FindByID(ctx context.Context, id uint) (*models.A
 	return &att, nil
 }
 
-func (r *AttendanceRepository) FindTodayCheckIn(ctx context.Context, userID uint) (*models.Attendance, error) {
+func (r *AttendanceRepository) FindTodayCheckIn(ctx context.Context, userID uint, from, to time.Time) (*models.Attendance, error) {
 	var att models.Attendance
-	today := time.Now().Truncate(24 * time.Hour)
-	tomorrow := today.Add(24 * time.Hour)
 
 	err := r.db.WithContext(ctx).
 		Where("user_id = ? AND check_in_time >= ? AND check_in_time < ?",
-			userID, today, tomorrow).
+			userID, from, to).
 		First(&att).Error
 	if err != nil {
 		return nil, err
@@ -45,15 +43,13 @@ func (r *AttendanceRepository) FindTodayCheckIn(ctx context.Context, userID uint
 	return &att, nil
 }
 
-func (r *AttendanceRepository) FindTodayByUserID(ctx context.Context, userID uint) (*models.Attendance, error) {
+func (r *AttendanceRepository) FindTodayByUserID(ctx context.Context, userID uint, from, to time.Time) (*models.Attendance, error) {
 	var att models.Attendance
-	today := time.Now().Truncate(24 * time.Hour)
-	tomorrow := today.Add(24 * time.Hour)
 
 	err := r.db.WithContext(ctx).
 		Preload("User").Preload("Branch").
 		Where("user_id = ? AND check_in_time >= ? AND check_in_time < ?",
-			userID, today, tomorrow).
+			userID, from, to).
 		First(&att).Error
 	if err != nil {
 		return nil, err

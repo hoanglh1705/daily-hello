@@ -23,7 +23,8 @@ func NewAuthHandler(service *services.AuthService) *AuthHandler {
 // @Accept json
 // @Produce json
 // @Param body body models.LoginRequest true "Login request"
-// @Success 200 {object} models.LoginResponse
+// @Success 200 {object} response.Response{data=models.LoginResponse}
+// @Success 400 {object} response.Response
 // @Router /v1/auth/login [post]
 func (h *AuthHandler) Login(c echo.Context) error {
 	var req models.LoginRequest
@@ -73,7 +74,7 @@ func (h *AuthHandler) Logout(c echo.Context) error {
 // @Accept json
 // @Produce json
 // @Param body body models.RefreshTokenRequest true "Refresh token request"
-// @Success 200 {object} models.RefreshTokenResponse
+// @Success 200 {object} response.Response{data=models.RefreshTokenResponse}
 // @Router /v1/auth/refresh-token [post]
 func (h *AuthHandler) RefreshToken(c echo.Context) error {
 	var req models.RefreshTokenRequest

@@ -28,7 +28,7 @@ func NewBranchWifiHandler(service *services.BranchWifiService) *BranchWifiHandle
 // @Success 201 {object} response.Response{data=models.BranchWifi} "Branch Wifi created successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 500 {object} response.Response "Internal server error"
-// @Router /v1/auth/branch-wifi [post]
+// @Router /v1/branch-wifi [post]
 func (h *BranchWifiHandler) Create(c echo.Context) error {
 	var req models.CreateBranchWifiRequest
 	if err := c.Bind(&req); err != nil {
@@ -54,7 +54,7 @@ func (h *BranchWifiHandler) Create(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.BranchWifi} "Branch Wifi details"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 404 {object} response.Response "Not found"
-// @Router /v1/auth/branch-wifi/{id} [get]
+// @Router /v1/branch-wifi/{id} [get]
 func (h *BranchWifiHandler) GetByID(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -77,7 +77,7 @@ func (h *BranchWifiHandler) GetByID(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.BranchWifi} "List of branch wifi"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 404 {object} response.Response "Not found"
-// @Router /v1/auth/branch-wifi/branch/{branch_id} [get]
+// @Router /v1/branch-wifi/branch/{branch_id} [get]
 func (h *BranchWifiHandler) GetByBranchID(c echo.Context) error {
 	branchID, err := strconv.ParseUint(c.Param("branch_id"), 10, 32)
 	if err != nil {
@@ -102,7 +102,7 @@ func (h *BranchWifiHandler) GetByBranchID(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.BranchWifi} "Branch Wifi updated successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 404 {object} response.Response "Not found"
-// @Router /v1/auth/branch-wifi/{id} [put]
+// @Router /v1/branch-wifi/{id} [put]
 func (h *BranchWifiHandler) Update(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -130,7 +130,7 @@ func (h *BranchWifiHandler) Update(c echo.Context) error {
 // @Success 200 {object} response.Response{data=string} "Branch Wifi deleted successfully"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 404 {object} response.Response "Not found"
-// @Router /v1/auth/branch-wifi/{id} [delete]
+// @Router /v1/branch-wifi/{id} [delete]
 func (h *BranchWifiHandler) Delete(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {

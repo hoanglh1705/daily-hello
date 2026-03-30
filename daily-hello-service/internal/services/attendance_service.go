@@ -15,17 +15,20 @@ type AttendanceService struct {
 	repo            *repositories.AttendanceRepository
 	branchRepo      repositories.BranchRepository
 	locationService *LocationService
+	timezone        *time.Location
 }
 
 func NewAttendanceService(
 	repo *repositories.AttendanceRepository,
 	branchRepo repositories.BranchRepository,
 	locationService *LocationService,
+	timezone *time.Location,
 ) *AttendanceService {
 	return &AttendanceService{
 		repo:            repo,
 		branchRepo:      branchRepo,
 		locationService: locationService,
+		timezone:        timezone,
 	}
 }
 
@@ -44,7 +47,8 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID uint, req models
 	}
 
 	// 3. Check if already checked in today
-	_, err = s.repo.FindTodayCheckIn(ctx, userID)
+	todayStart, tomorrowStart := s.todayRange()
+	_, err = s.repo.FindTodayCheckIn(ctx, userID, todayStart, tomorrowStart)
 	if err == nil {
 		return nil, appErrors.ErrAlreadyCheckedIn
 	}
@@ -53,7 +57,7 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID uint, req models
 	}
 
 	// 4. Create attendance record with check-in
-	now := time.Now()
+	now := time.Now().In(s.timezone)
 	checkInLat := req.Lat
 	checkInLng := req.Lng
 	att := &models.Attendance{
@@ -76,7 +80,8 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID uint, req models
 
 func (s *AttendanceService) CheckOut(ctx context.Context, userID uint, req models.AttendanceRequest) (*models.Attendance, error) {
 	// 1. Verify checked in today
-	att, err := s.repo.FindTodayCheckIn(ctx, userID)
+	todayStart, tomorrowStart := s.todayRange()
+	att, err := s.repo.FindTodayCheckIn(ctx, userID, todayStart, tomorrowStart)
 	if err != nil {
 		return nil, appErrors.ErrNotCheckedIn
 	}
@@ -95,7 +100,7 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID uint, req model
 	}
 
 	// 4. Update check-out on existing record
-	now := time.Now()
+	now := time.Now().In(s.timezone)
 	checkOutLat := req.Lat
 	checkOutLng := req.Lng
 	if err := s.repo.UpdateCheckOut(ctx, att.ID, now, &checkOutLat, &checkOutLng); err != nil {
@@ -126,7 +131,8 @@ func (s *AttendanceService) GetHistory(ctx context.Context, filter models.Attend
 }
 
 func (s *AttendanceService) GetToday(ctx context.Context, userID uint) (*models.Attendance, error) {
-	att, err := s.repo.FindTodayByUserID(ctx, userID)
+	todayStart, tomorrowStart := s.todayRange()
+	att, err := s.repo.FindTodayByUserID(ctx, userID, todayStart, tomorrowStart)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -134,4 +140,10 @@ func (s *AttendanceService) GetToday(ctx context.Context, userID uint) (*models.
 		return nil, appErrors.ErrInternal
 	}
 	return att, nil
+}
+
+func (s *AttendanceService) todayRange() (time.Time, time.Time) {
+	now := time.Now().In(s.timezone)
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, s.timezone)
+	return today, today.Add(24 * time.Hour)
 }

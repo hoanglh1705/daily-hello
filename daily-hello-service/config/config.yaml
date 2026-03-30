@@ -13,10 +13,11 @@ database:
   password: ams123
   database: dhdb
   search_path: public
+  timezone: Asia/Ho_Chi_Minh
   ssl_mode: disable
 auto_migration: true
 jwt_config:
   secret_key: secret
-  duration: 60 # in seconds
-  duration_refresh: 360 # in seconds
+  duration: 600 # in seconds
+  duration_refresh: 3600 # in seconds
   algorithm: HS256

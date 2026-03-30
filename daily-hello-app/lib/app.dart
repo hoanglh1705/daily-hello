@@ -4,7 +4,6 @@ import 'features/auth/login_page.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/attendance/checkin_page.dart';
 import 'features/attendance/history_page.dart';
-import 'features/dashboard/dashboard_page.dart';
 import 'features/profile/profile_page.dart';
 import 'main.dart';
 
@@ -85,7 +84,6 @@ class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
 
   static const _pages = [
-    DashboardPage(),
     CheckInPage(),
     ProfilePage(),
   ];
@@ -98,11 +96,6 @@ class _MainShellState extends State<MainShell> {
         selectedIndex: _selectedIndex,
         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
         destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Tổng quan',
-          ),
           NavigationDestination(
             icon: Icon(Icons.fingerprint_outlined),
             selectedIcon: Icon(Icons.fingerprint),

@@ -6,7 +6,6 @@ import 'core/network/api_client.dart';
 import 'core/storage/secure_storage.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/attendance/attendance_controller.dart';
-import 'features/dashboard/dashboard_controller.dart';
 import 'features/profile/profile_controller.dart';
 import 'services/auth_service.dart';
 import 'services/attendance_service.dart';
@@ -46,10 +45,7 @@ class AppProviders extends StatelessWidget {
           create: (_) => AuthController(authService, secureStorage),
         ),
         ChangeNotifierProvider(
-          create: (_) => AttendanceController(attendanceService),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => DashboardController(attendanceService),
+          create: (_) => AttendanceController(attendanceService, branchService),
         ),
         ChangeNotifierProvider(
           create: (_) => ProfileController(authService, secureStorage),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'attendance_controller.dart';
+import '../auth/auth_controller.dart';
 import '../../widgets/app_button.dart';
 import '../../core/utils/date_format_utils.dart';
 
@@ -181,17 +182,114 @@ class _CheckInPageState extends State<CheckInPage> {
     );
   }
 
+  List<Widget> _buildGroupedHistory(
+    List<dynamic> items,
+    Color primaryColor,
+    ThemeData theme,
+  ) {
+    // Group items by date
+    final grouped = <String, List<dynamic>>{};
+    for (final item in items) {
+      final dateKey = DateFormatUtils.formatVietnameseDateShort(item.checkIn);
+      grouped.putIfAbsent(dateKey, () => []).add(item);
+    }
+
+    final widgets = <Widget>[];
+    for (final entry in grouped.entries) {
+      widgets.add(
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(10),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Date header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                child: Text(
+                  entry.key,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              // Activity rows for this date
+              ...entry.value.expand<Widget>((item) {
+                final rows = <Widget>[
+                  _CompactActivityRow(
+                    icon: Icons.login,
+                    iconColor: primaryColor,
+                    label: 'Check-in',
+                    time: DateFormatUtils.formatTime(item.checkIn),
+                    status: _getCheckInStatus(item),
+                    statusColor: _getStatusColor(item),
+                  ),
+                ];
+                if (item.checkOut != null) {
+                  rows.add(_CompactActivityRow(
+                    icon: Icons.logout,
+                    iconColor: Colors.green,
+                    label: 'Check-out',
+                    time: DateFormatUtils.formatTime(item.checkOut!),
+                    status: 'HOÀN THÀNH',
+                    statusColor: Colors.green[600]!,
+                  ));
+                }
+                return rows;
+              }),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      );
+    }
+    return widgets;
+  }
+
+  String _getCheckInStatus(dynamic item) {
+    final hour = item.checkIn.hour;
+    if (hour < 8) return 'SỚM';
+    if (hour == 8 && item.checkIn.minute <= 15) return 'ĐÚNG GIỜ';
+    return 'MUỘN';
+  }
+
+  Color _getStatusColor(dynamic item) {
+    final hour = item.checkIn.hour;
+    if (hour < 8) return Colors.blue;
+    if (hour == 8 && item.checkIn.minute <= 15) return Colors.green[600]!;
+    return Colors.orange[700]!;
+  }
+
   @override
   void initState() {
     super.initState();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() => _now = DateTime.now());
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final controller = context.read<AttendanceController>();
+      final authController = context.read<AuthController>();
       controller.loadTodayAttendance();
-      controller.loadWifiInfo();
+      await controller.loadWifiInfo();
       controller.loadHistory(refresh: true);
+      // Load profile then validate branch wifi
+      await authController.loadProfile();
+      if (mounted) {
+        await controller.loadBranchWifi(authController.currentUser?.branchId);
+      }
     });
   }
 
@@ -306,6 +404,44 @@ class _CheckInPageState extends State<CheckInPage> {
                     ),
                     const SizedBox(height: 16),
 
+                    // WiFi error message
+                    if (controller.isWifiChecked &&
+                        !controller.isWifiValid &&
+                        controller.wifiErrorMessage != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.red[200]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.wifi_off,
+                                size: 18, color: Colors.red[600]),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                controller.wifiErrorMessage!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red[700],
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () =>
+                                  controller.refreshWifiValidation(),
+                              child: Icon(Icons.refresh,
+                                  size: 18, color: Colors.red[400]),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     // Action buttons (always visible)
                     Row(
                       children: [
@@ -313,10 +449,13 @@ class _CheckInPageState extends State<CheckInPage> {
                           child: _ActionButton(
                             label: 'Check-in',
                             icon: Icons.login,
-                            isActive: true,
+                            isActive: !controller.isWifiChecked ||
+                                controller.isWifiValid,
                             isLoading: controller.isLoading && today == null,
                             primaryColor: primaryColor,
-                            onPressed: !controller.isLoading
+                            onPressed: (!controller.isWifiChecked ||
+                                        controller.isWifiValid) &&
+                                    !controller.isLoading
                                 ? _handleCheckIn
                                 : null,
                           ),
@@ -326,11 +465,16 @@ class _CheckInPageState extends State<CheckInPage> {
                           child: _ActionButton(
                             label: 'Check-out',
                             icon: Icons.logout,
-                            isActive: today != null,
-                            isLoading: controller.isLoading &&
-                                today != null,
+                            isActive: today != null &&
+                                (!controller.isWifiChecked ||
+                                    controller.isWifiValid),
+                            isLoading:
+                                controller.isLoading && today != null,
                             primaryColor: primaryColor,
-                            onPressed: today != null && !controller.isLoading
+                            onPressed: today != null &&
+                                    (!controller.isWifiChecked ||
+                                        controller.isWifiValid) &&
+                                    !controller.isLoading
                                 ? _handleCheckOut
                                 : null,
                           ),
@@ -373,7 +517,7 @@ class _CheckInPageState extends State<CheckInPage> {
             ),
             const SizedBox(height: 16),
 
-            // Recent activity list
+            // Recent activity list (grouped by date)
             if (controller.history.isEmpty &&
                 !controller.isLoadingHistory)
               Padding(
@@ -386,12 +530,11 @@ class _CheckInPageState extends State<CheckInPage> {
                 ),
               )
             else
-              ...controller.history.take(4).map(
-                    (item) => _RecentActivityItem(
-                      item: item,
-                      primaryColor: primaryColor,
-                    ),
-                  ),
+              ..._buildGroupedHistory(
+                controller.history.take(4).toList(),
+                primaryColor,
+                theme,
+              ),
             if (controller.isLoadingHistory)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
@@ -578,187 +721,62 @@ class _CompletedBadge extends StatelessWidget {
   }
 }
 
-class _RecentActivityItem extends StatelessWidget {
-  final dynamic item;
-  final Color primaryColor;
+class _CompactActivityRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String time;
+  final String status;
+  final Color statusColor;
 
-  const _RecentActivityItem({
-    required this.item,
-    required this.primaryColor,
+  const _CompactActivityRow({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.time,
+    required this.status,
+    required this.statusColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final checkInTime = DateFormatUtils.formatTime(item.checkIn);
-    final checkOutTime = item.checkOut != null
-        ? DateFormatUtils.formatTime(item.checkOut!)
-        : null;
-    final dateLabel = DateFormatUtils.formatVietnameseDateShort(item.checkIn);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(10),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
         children: [
-          // Check-in row
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: primaryColor.withAlpha(20),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  Icons.login,
-                  color: primaryColor,
-                  size: 20,
-                ),
+          Icon(icon, size: 18, color: iconColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Check-in sáng',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      dateLabel,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    checkInTime,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _getCheckInStatus(item),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: _getStatusColor(item),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
-          if (checkOutTime != null) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Divider(height: 1, color: Colors.grey[200]),
+          Text(
+            time,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
             ),
-            // Check-out row
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.green.withAlpha(20),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.logout,
-                    color: Colors.green,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Check-out chiều',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        dateLabel,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      checkOutTime,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'HOÀN THÀNH',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.green[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 72,
+            child: Text(
+              status,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: statusColor,
+              ),
             ),
-          ],
+          ),
         ],
       ),
     );
-  }
-
-  String _getCheckInStatus(dynamic item) {
-    final hour = item.checkIn.hour;
-    if (hour < 8) return 'SỚM';
-    if (hour == 8 && item.checkIn.minute <= 15) return 'ĐÚNG GIỜ';
-    return 'MUỘN';
-  }
-
-  Color _getStatusColor(dynamic item) {
-    final hour = item.checkIn.hour;
-    if (hour < 8) return Colors.blue;
-    if (hour == 8 && item.checkIn.minute <= 15) return Colors.green[600]!;
-    return Colors.orange[700]!;
   }
 }

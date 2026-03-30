@@ -4,6 +4,8 @@ import (
 	"daily-hello-service/config"
 	"daily-hello-service/internal/repositories"
 	"daily-hello-service/internal/services"
+	"time"
+
 	"go-libs/dihelper"
 
 	"github.com/sarulabs/di"
@@ -70,11 +72,16 @@ func initUseCasesBuilder() {
 				Name:  AttendanceServiceDIName,
 				Scope: di.App,
 				Build: func(ctn di.Container) (any, error) {
+					cfg := ctn.Get(ConfigDIName).(*config.Config)
 					attendanceRepo := ctn.Get(AttendanceRepositoryDIName).(*repositories.AttendanceRepository)
 					branchRepo := ctn.Get(BranchRepositoryDIName).(repositories.BranchRepository)
 					branchWifiRepo := ctn.Get(BranchWifiRepositoryDIName).(repositories.BranchWifiRepository)
 					locationService := services.NewLocationService(branchRepo, branchWifiRepo)
-					return services.NewAttendanceService(attendanceRepo, branchRepo, locationService), nil
+					location, err := loadAttendanceTimezone(cfg.Database.Timezone)
+					if err != nil {
+						return nil, err
+					}
+					return services.NewAttendanceService(attendanceRepo, branchRepo, locationService, location), nil
 				},
 				Close: func(obj any) error {
 					return nil
@@ -95,4 +102,17 @@ func initUseCasesBuilder() {
 
 		return arr
 	}
+}
+
+func loadAttendanceTimezone(name string) (*time.Location, error) {
+	if name == "" {
+		name = "Asia/Ho_Chi_Minh"
+	}
+
+	location, err := time.LoadLocation(name)
+	if err == nil {
+		return location, nil
+	}
+
+	return time.FixedZone("GMT+7", 7*60*60), nil
 }

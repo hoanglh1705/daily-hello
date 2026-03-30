@@ -5,10 +5,13 @@ import 'package:wifi_signal_strength_indicator/wifi_signal_strength.dart';
 import '../../core/network/api_response.dart';
 import '../../core/utils/location_permission_utils.dart';
 import '../../models/attendance.dart';
+import '../../models/branch_wifi.dart';
 import '../../services/attendance_service.dart';
+import '../../services/branch_service.dart';
 
 class AttendanceController extends ChangeNotifier {
   final AttendanceService _service;
+  final BranchService _branchService;
   final NetworkInfo _networkInfo = NetworkInfo();
 
   Attendance? todayAttendance;
@@ -24,7 +27,17 @@ class AttendanceController extends ChangeNotifier {
   int? wifiSignalStrength; // dBm
   int? wifiSignalLevel; // 0-4
 
-  AttendanceController(this._service);
+  // Branch WiFi validation
+  List<BranchWifi> _branchWifiList = [];
+  bool _wifiValidated = false;
+  bool _wifiMatched = false;
+  String? wifiErrorMessage;
+
+  bool get isWifiValid => _wifiMatched;
+  bool get isWifiChecked => _wifiValidated;
+  List<BranchWifi> get branchWifiList => _branchWifiList;
+
+  AttendanceController(this._service, this._branchService);
 
   String _formatError(Object error) {
     return error.toString().replaceFirst('Exception: ', '');
@@ -50,6 +63,72 @@ class AttendanceController extends ChangeNotifier {
       wifiSignalStrength = null;
       wifiSignalLevel = null;
     }
+    notifyListeners();
+  }
+
+  Future<void> loadBranchWifi(String? branchId) async {
+    if (branchId == null || branchId.isEmpty) {
+      _wifiValidated = true;
+      _wifiMatched = false;
+      wifiErrorMessage = 'Tài khoản chưa được gán chi nhánh';
+      notifyListeners();
+      return;
+    }
+
+    try {
+      _branchWifiList = await _branchService.getBranchWifiList(branchId);
+      _wifiValidated = true;
+
+      if (_branchWifiList.isEmpty) {
+        // No wifi configured for branch — allow check-in
+        _wifiMatched = true;
+        wifiErrorMessage = null;
+      } else {
+        _validateWifi();
+      }
+    } catch (error) {
+      _wifiValidated = true;
+      _wifiMatched = false;
+      wifiErrorMessage = 'Không thể tải danh sách WiFi chi nhánh';
+    }
+    notifyListeners();
+  }
+
+  void _validateWifi() {
+    if (_branchWifiList.isEmpty) {
+      _wifiMatched = true;
+      wifiErrorMessage = null;
+      return;
+    }
+
+    final currentSsid = wifiSsid?.toLowerCase();
+    if (currentSsid == null || currentSsid.isEmpty) {
+      _wifiMatched = false;
+      wifiErrorMessage = 'Không kết nối WiFi. Vui lòng kết nối WiFi của chi nhánh';
+      return;
+    }
+
+    final matched = _branchWifiList.any((bw) {
+      final bwSsid = bw.ssid?.toLowerCase();
+      return bwSsid != null && bwSsid.isNotEmpty && bwSsid == currentSsid;
+    });
+
+    _wifiMatched = matched;
+    if (!matched) {
+      final allowedNames = _branchWifiList
+          .where((bw) => bw.ssid != null && bw.ssid!.isNotEmpty)
+          .map((bw) => bw.ssid!)
+          .join(', ');
+      wifiErrorMessage =
+          'WiFi "$wifiSsid" không thuộc chi nhánh.\nWiFi hợp lệ: $allowedNames';
+    } else {
+      wifiErrorMessage = null;
+    }
+  }
+
+  Future<void> refreshWifiValidation() async {
+    await loadWifiInfo();
+    _validateWifi();
     notifyListeners();
   }
 
