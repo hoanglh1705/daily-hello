@@ -40,4 +40,11 @@ var (
 
 	// WiFi
 	ErrWifiNotAllowed = AppError{"WIFI_NOT_ALLOWED", "WiFi is not registered for this branch"}
+
+	// HMAC Anti-Replay
+	ErrMissingHmacHeaders = AppError{"MISSING_HMAC_HEADERS", "Missing required security headers"}
+	ErrInvalidTimestamp   = AppError{"INVALID_TIMESTAMP", "Invalid request timestamp"}
+	ErrRequestExpired     = AppError{"REQUEST_EXPIRED", "Request has expired"}
+	ErrInvalidSignature   = AppError{"INVALID_SIGNATURE", "Invalid request signature"}
+	ErrNonceReused        = AppError{"NONCE_REUSED", "Duplicate request detected"}
 )

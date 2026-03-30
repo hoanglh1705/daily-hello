@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import '../core/network/api_response.dart';
+import '../core/utils/hmac_signer.dart';
 import '../models/attendance.dart';
 
 class AttendanceService {
@@ -18,7 +20,13 @@ class AttendanceService {
     String? wifiBssid,
   }) async {
     final payload = await _buildPayload(lat: lat, lng: lng, wifiSsid: wifiSsid, wifiBssid: wifiBssid);
-    final res = await dio.post('/v1/attendance/check-in', data: payload);
+    final body = jsonEncode(payload);
+    final hmacHeaders = HmacSigner.sign(body);
+    final res = await dio.post(
+      '/v1/attendance/check-in',
+      data: body,
+      options: Options(headers: hmacHeaders),
+    );
     return Attendance.fromJson(unwrapApiData(res.data) as Map<String, dynamic>);
   }
 
@@ -29,7 +37,13 @@ class AttendanceService {
     String? wifiBssid,
   }) async {
     final payload = await _buildPayload(lat: lat, lng: lng, wifiSsid: wifiSsid, wifiBssid: wifiBssid);
-    final res = await dio.post('/v1/attendance/check-out', data: payload);
+    final body = jsonEncode(payload);
+    final hmacHeaders = HmacSigner.sign(body);
+    final res = await dio.post(
+      '/v1/attendance/check-out',
+      data: body,
+      options: Options(headers: hmacHeaders),
+    );
     return Attendance.fromJson(unwrapApiData(res.data) as Map<String, dynamic>);
   }
 

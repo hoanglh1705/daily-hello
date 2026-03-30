@@ -4,8 +4,10 @@ import (
 	"daily-hello-service/config"
 	"daily-hello-service/internal/diregistry"
 	"daily-hello-service/internal/handlers"
+	"daily-hello-service/internal/middlewares"
 
 	auth_middleware "go-libs/http_middlewares/auth"
+	"go-libs/redisclienthelper"
 
 	echo "github.com/labstack/echo/v4"
 	echoSwagger "github.com/swaggo/echo-swagger"
@@ -75,10 +77,18 @@ func registerProtectedRoutes(g *echo.Group) {
 	branchWifiGroup.DELETE("/:id", branchWifiHandler.Delete)
 
 	// Attendance routes
+	cfg := diregistry.GetDependency(diregistry.ConfigDIName).(*config.Config)
+	redisHelper := diregistry.GetDependency(diregistry.RedisClientHelperDIName).(*redisclienthelper.RedisClientHelper)
+	hmacMW := middlewares.NewHmacMiddleware(
+		cfg.HmacConfig.SecretKey,
+		cfg.HmacConfig.MaxAgeSeconds,
+		redisHelper.Client,
+	)
+
 	attendanceHandler := diregistry.GetDependency(diregistry.AttendanceAPIDIName).(*handlers.AttendanceHandler)
 	attendanceGroup := g.Group("/attendance")
-	attendanceGroup.POST("/check-in", attendanceHandler.CheckIn)
-	attendanceGroup.POST("/check-out", attendanceHandler.CheckOut)
+	attendanceGroup.POST("/check-in", attendanceHandler.CheckIn, hmacMW.Validate())
+	attendanceGroup.POST("/check-out", attendanceHandler.CheckOut, hmacMW.Validate())
 	attendanceGroup.GET("/my-history", attendanceHandler.GetMyHistory)
 	attendanceGroup.GET("/history", attendanceHandler.GetHistory)
 	attendanceGroup.GET("/today", attendanceHandler.GetToday)

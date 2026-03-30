@@ -47,7 +47,7 @@ export default function BranchPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Xac nhan xoa?')) return
+    if (!confirm('Xác nhận xóa?')) return
     await deleteBranch(id)
     fetchData()
   }
@@ -64,15 +64,23 @@ export default function BranchPage() {
 
   return (
     <div>
-      <h1>Quan ly chi nhanh</h1>
+      <div className="page-header">
+        <h1>Quản lý chi nhánh</h1>
+        <button className="btn-primary" onClick={handleCreate}>+ Thêm chi nhánh</button>
+      </div>
 
       <div className="toolbar">
-        <input
-          placeholder="Tim kiem..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <button onClick={handleCreate}>Them chi nhanh</button>
+        <div className="toolbar-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            placeholder="Tìm kiếm chi nhánh..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
       <BranchTable
@@ -91,7 +99,7 @@ export default function BranchPage() {
 
       <Modal
         open={modalOpen}
-        title={editing ? 'Cap nhat chi nhanh' : 'Them chi nhanh'}
+        title={editing ? 'Cập nhật chi nhánh' : 'Thêm chi nhánh'}
         onClose={() => setModalOpen(false)}
       >
         <BranchForm

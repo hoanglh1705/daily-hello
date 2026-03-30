@@ -34,7 +34,13 @@ type (
 		AutoMigration   bool              `mapstructure:"auto_migration"`
 		Cache           cacheConfig       `mapstructure:"cache"`
 		JwtConfig       jwtConfig         `mapstructure:"jwt_config"`
+		HmacConfig      hmacConfig        `mapstructure:"hmac_config"`
 		Timezone        string            `mapstructure:"timezone"`
+	}
+
+	hmacConfig struct {
+		SecretKey     string `mapstructure:"secret_key"`
+		MaxAgeSeconds int    `mapstructure:"max_age_seconds"`
 	}
 
 	databaseConfig struct {

@@ -22,3 +22,6 @@ jwt_config:
   duration: 600 # in seconds
   duration_refresh: 3600 # in seconds
   algorithm: HS256
+hmac_config:
+  secret_key: "dh-hmac-secret-change-me"
+  max_age_seconds: 60 # max allowed time drift in seconds

@@ -73,7 +73,6 @@ export default function UserPage() {
   const fetchBranches = async () => {
     setLoadingBranches(true)
     try {
-      // Fetch matching branches to show in dropdown
       const res = await getBranches({ page: 1, limit: 100, search: debouncedBranchSearch })
       const opts = res.data.items.map((b: any) => ({ value: b.id, label: b.name }))
       setBranchOptions(opts)
@@ -99,29 +98,37 @@ export default function UserPage() {
 
   return (
     <div>
-      <h1>Quan ly user</h1>
+      <div className="page-header">
+        <h1>Quản lý nhân viên</h1>
+        <button className="btn-primary" onClick={handleCreate}>+ Thêm User</button>
+      </div>
 
-      <div className="toolbar" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-        <input
-          placeholder="Tim kiem keyword..."
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          style={{ width: '250px' }}
-        />
-
-        <div style={{ width: '250px' }}>
-          <SearchSelect
-            options={branchOptions}
-            value={branchId}
-            onChange={setBranchId}
-            placeholder="Loc theo chi nhanh..."
-            searchValue={branchSearch}
-            onSearchChange={setBranchSearch}
-            loading={loadingBranches}
+      <div className="toolbar">
+        <div className="toolbar-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            placeholder="Tìm kiếm theo tên, email, SĐT..."
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
           />
         </div>
 
-        <button onClick={handleCreate}>Thêm User</button>
+        <div className="toolbar-filters">
+          <div style={{ minWidth: '220px' }}>
+            <SearchSelect
+              options={branchOptions}
+              value={branchId}
+              onChange={setBranchId}
+              placeholder="Lọc theo chi nhánh..."
+              searchValue={branchSearch}
+              onSearchChange={setBranchSearch}
+              loading={loadingBranches}
+            />
+          </div>
+        </div>
       </div>
 
       <UserTable data={data} loading={loading} onEdit={handleEdit} />

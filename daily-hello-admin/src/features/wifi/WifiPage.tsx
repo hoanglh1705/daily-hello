@@ -68,7 +68,7 @@ export default function WifiPage() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Xac nhan xoa?')) return
+    if (!confirm('Xác nhận xóa?')) return
     await deleteWifi(id)
     fetchData()
   }
@@ -81,19 +81,25 @@ export default function WifiPage() {
 
   return (
     <div>
-      <h1>Quan ly WiFi</h1>
+      <div className="page-header">
+        <h1>Quản lý WiFi</h1>
+        <button className="btn-primary" onClick={() => setModalOpen(true)}>+ Thêm WiFi</button>
+      </div>
 
       <div className="toolbar">
-        <SearchSelect
-          options={branchOptions}
-          value={branchId}
-          onChange={handleBranchChange}
-          placeholder="Loc theo chi nhanh"
-          searchValue={branchSearch}
-          onSearchChange={setBranchSearch}
-          loading={branchLoading}
-        />
-        <button onClick={() => setModalOpen(true)}>Them WiFi</button>
+        <div className="toolbar-filters">
+          <div style={{ minWidth: '220px' }}>
+            <SearchSelect
+              options={branchOptions}
+              value={branchId}
+              onChange={handleBranchChange}
+              placeholder="Lọc theo chi nhánh"
+              searchValue={branchSearch}
+              onSearchChange={setBranchSearch}
+              loading={branchLoading}
+            />
+          </div>
+        </div>
       </div>
 
       <WifiTable data={data} loading={loading} onDelete={handleDelete} />
@@ -107,7 +113,7 @@ export default function WifiPage() {
 
       <Modal
         open={modalOpen}
-        title="Them WiFi"
+        title="Thêm WiFi"
         onClose={() => setModalOpen(false)}
       >
         <WifiForm
