@@ -1,6 +1,7 @@
 package services
 
 import (
+	"slices"
 	"context"
 
 	"daily-hello-service/internal/models"
@@ -47,12 +48,87 @@ func (s *BranchWifiService) GetByID(ctx context.Context, id uint) (*models.Branc
 	return wifi, nil
 }
 
-func (s *BranchWifiService) GetByBranchID(ctx context.Context, branchID uint) ([]models.BranchWifi, error) {
-	items, err := s.repo.FindByBranchID(ctx, branchID)
+func (s *BranchWifiService) GetByBranchID(ctx context.Context, branchID uint, pq models.PaginationQuery) (*models.PaginatedResponse, error) {
+	items, total, err := s.repo.FindByBranchID(ctx, branchID, pq)
 	if err != nil {
 		return nil, appErrors.ErrInternal
 	}
-	return items, nil
+	return &models.PaginatedResponse{
+		Items: items,
+		Meta: models.PaginationMeta{
+			Page:  pq.GetPage(),
+			Limit: pq.GetLimit(),
+			Total: total,
+		},
+	}, nil
+}
+
+func (s *BranchWifiService) GetMyList(ctx context.Context, role string, branchID *uint, queryBranchID *uint, pq models.PaginationQuery) (*models.PaginatedResponse, error) {
+	var (
+		items []models.BranchWifi
+		total int64
+		err   error
+	)
+
+	switch models.Role(role) {
+	case models.RoleAdmin:
+		if queryBranchID != nil {
+			items, total, err = s.repo.FindByBranchID(ctx, *queryBranchID, pq)
+		} else {
+			items, total, err = s.repo.FindAll(ctx, pq)
+		}
+	case models.RoleManager:
+		if branchID == nil {
+			return nil, appErrors.ErrForbidden
+		}
+
+		branch, findErr := s.branchRepo.FindByID(ctx, *branchID)
+		if findErr != nil {
+			return nil, appErrors.ErrBranchNotFound
+		}
+
+		branchIDs := []uint{branch.ID}
+		if branch.BranchCode != "" {
+			children, childErr := s.branchRepo.FindByParentBranchCode(ctx, branch.BranchCode)
+			if childErr != nil {
+				return nil, appErrors.ErrInternal
+			}
+			for _, child := range children {
+				branchIDs = append(branchIDs, child.ID)
+			}
+		}
+
+		if queryBranchID != nil {
+			allowed := slices.Contains(branchIDs, *queryBranchID)
+			if !allowed {
+				return nil, appErrors.ErrForbidden
+			}
+			items, total, err = s.repo.FindByBranchID(ctx, *queryBranchID, pq)
+		} else {
+			items, total, err = s.repo.FindByBranchIDs(ctx, branchIDs, pq)
+		}
+	default:
+		if branchID == nil {
+			return nil, appErrors.ErrForbidden
+		}
+		if queryBranchID != nil && *queryBranchID != *branchID {
+			return nil, appErrors.ErrForbidden
+		}
+		items, total, err = s.repo.FindByBranchID(ctx, *branchID, pq)
+	}
+
+	if err != nil {
+		return nil, appErrors.ErrInternal
+	}
+
+	return &models.PaginatedResponse{
+		Items: items,
+		Meta: models.PaginationMeta{
+			Page:  pq.GetPage(),
+			Limit: pq.GetLimit(),
+			Total: total,
+		},
+	}, nil
 }
 
 func (s *BranchWifiService) Update(ctx context.Context, id uint, req models.UpdateBranchWifiRequest) (*models.BranchWifi, error) {

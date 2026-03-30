@@ -74,7 +74,9 @@ func (h *BranchWifiHandler) GetByID(c echo.Context) error {
 // @Tags BranchWifi
 // @Produce json
 // @Param branch_id path int true "Branch ID"
-// @Success 200 {object} response.Response{data=models.BranchWifi} "List of branch wifi"
+// @Param page query int false "Page number"
+// @Param limit query int false "Items per page"
+// @Success 200 {object} response.Response{data=models.PaginatedResponse} "List of branch wifi"
 // @Failure 400 {object} response.Response "Invalid input"
 // @Failure 404 {object} response.Response "Not found"
 // @Router /v1/branch-wifi/branch/{branch_id} [get]
@@ -84,7 +86,53 @@ func (h *BranchWifiHandler) GetByBranchID(c echo.Context) error {
 		return response.Error(c, appErrors.ErrInvalidInput)
 	}
 
-	result, err := h.service.GetByBranchID(c.Request().Context(), uint(branchID))
+	var pq models.PaginationQuery
+	if err := c.Bind(&pq); err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	result, err := h.service.GetByBranchID(c.Request().Context(), uint(branchID), pq)
+	if err != nil {
+		return response.HandleError(c, err)
+	}
+
+	return response.Success(c, result)
+}
+
+// @Summary Get My Branch Wifi List
+// @Description Get wifi list by current user role. Admin sees all, manager sees current branch and child branches, others see only own branch.
+// @Tags BranchWifi
+// @Produce json
+// @Param page query int false "Page number"
+// @Param branch_id query int false "Branch id"
+// @Param limit query int false "Items per page"
+// @Success 200 {object} response.Response{data=models.PaginatedResponse{items=[]models.BranchWifi}} "List of branch wifi"
+// @Failure 400 {object} response.Response "Invalid input"
+// @Failure 403 {object} response.Response "Forbidden"
+// @Router /v1/branch-wifi [get]
+func (h *BranchWifiHandler) GetMyList(c echo.Context) error {
+	var pq models.PaginationQuery
+	if err := c.Bind(&pq); err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	role, _ := c.Get("role").(string)
+	branchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	var queryBranchID *uint
+	if branchIDParam := c.QueryParam("branch_id"); branchIDParam != "" {
+		parsedBranchID, parseErr := strconv.ParseUint(branchIDParam, 10, 32)
+		if parseErr != nil {
+			return response.Error(c, appErrors.ErrInvalidInput)
+		}
+		branchIDValue := uint(parsedBranchID)
+		queryBranchID = &branchIDValue
+	}
+
+	result, err := h.service.GetMyList(c.Request().Context(), role, branchID, queryBranchID, pq)
 	if err != nil {
 		return response.HandleError(c, err)
 	}
@@ -142,4 +190,38 @@ func (h *BranchWifiHandler) Delete(c echo.Context) error {
 	}
 
 	return response.Success(c, map[string]string{"message": "Branch wifi deleted successfully"})
+}
+
+func getContextUint(c echo.Context, key string) (*uint, error) {
+	value := c.Get(key)
+	if value == nil {
+		return nil, nil
+	}
+
+	switch v := value.(type) {
+	case uint:
+		return &v, nil
+	case *uint:
+		return v, nil
+	case int:
+		uv := uint(v)
+		return &uv, nil
+	case *int:
+		if v == nil {
+			return nil, nil
+		}
+		uv := uint(*v)
+		return &uv, nil
+	case float64:
+		uv := uint(v)
+		return &uv, nil
+	case *float64:
+		if v == nil {
+			return nil, nil
+		}
+		uv := uint(*v)
+		return &uv, nil
+	default:
+		return nil, appErrors.ErrInvalidInput
+	}
 }

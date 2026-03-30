@@ -68,6 +68,7 @@ func registerProtectedRoutes(g *echo.Group) {
 	branchWifiHandler := diregistry.GetDependency(diregistry.BranchWifiAPIDIName).(*handlers.BranchWifiHandler)
 	branchWifiGroup := g.Group("/branch-wifi")
 	branchWifiGroup.POST("", branchWifiHandler.Create)
+	branchWifiGroup.GET("", branchWifiHandler.GetMyList)
 	branchWifiGroup.GET("/:id", branchWifiHandler.GetByID)
 	branchWifiGroup.GET("/branch/:branch_id", branchWifiHandler.GetByBranchID)
 	branchWifiGroup.PUT("/:id", branchWifiHandler.Update)

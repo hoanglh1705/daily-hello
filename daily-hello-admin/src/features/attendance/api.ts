@@ -1,10 +1,8 @@
 import axios from '@/services/axios'
 import type { Attendance } from './types'
+import type { PaginatedListResponse } from '@/shared/types/api'
 
-type ListResponse = {
-  data: Attendance[]
-  meta: { page: number; limit: number; total: number }
-}
+type ListResponse = PaginatedListResponse<Attendance>
 
 export const getAttendances = (params: {
   page: number
@@ -12,5 +10,5 @@ export const getAttendances = (params: {
   branch_id?: number
   date?: string
 }) => {
-  return axios.get<unknown, ListResponse>('/v1/attendances', { params })
+  return axios.get<unknown, ListResponse>('/v1/attendance/history', { params })
 }

@@ -12,6 +12,7 @@ type (
 	BranchRepository interface {
 		Create(ctx context.Context, branch *models.Branch) error
 		FindByID(ctx context.Context, id uint) (*models.Branch, error)
+		FindByParentBranchCode(ctx context.Context, parentBranchCode string) ([]models.Branch, error)
 		Update(ctx context.Context, branch *models.Branch) error
 		Delete(ctx context.Context, id uint) error
 		List(ctx context.Context, pq models.PaginationQuery) ([]models.Branch, int64, error)
@@ -37,6 +38,17 @@ func (r *branchRepository) FindByID(ctx context.Context, id uint) (*models.Branc
 		return nil, err
 	}
 	return &branch, nil
+}
+
+func (r *branchRepository) FindByParentBranchCode(ctx context.Context, parentBranchCode string) ([]models.Branch, error) {
+	var branches []models.Branch
+	err := r.db.WithContext(ctx).
+		Where("parent_branch_code = ?", parentBranchCode).
+		Find(&branches).Error
+	if err != nil {
+		return nil, err
+	}
+	return branches, nil
 }
 
 func (r *branchRepository) Update(ctx context.Context, branch *models.Branch) error {

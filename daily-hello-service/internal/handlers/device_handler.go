@@ -78,12 +78,19 @@ func (h *DeviceHandler) GetStatus(c echo.Context) error {
 // @Description List all devices registered by the current user
 // @Tags Device
 // @Produce json
-// @Success 200 {object} response.Response{data=[]models.Device} "List of devices"
+// @Param page query int false "Page number"
+// @Param limit query int false "Items per page"
+// @Success 200 {object} response.Response{data=models.PaginatedResponse} "List of devices"
 // @Router /v1/devices [get]
 func (h *DeviceHandler) ListMyDevices(c echo.Context) error {
 	userID := uint(c.Get("user_id").(float64))
 
-	result, err := h.service.GetByUserID(c.Request().Context(), userID)
+	var pq models.PaginationQuery
+	if err := c.Bind(&pq); err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	result, err := h.service.GetByUserID(c.Request().Context(), userID, pq)
 	if err != nil {
 		return response.HandleError(c, err)
 	}
@@ -96,7 +103,9 @@ func (h *DeviceHandler) ListMyDevices(c echo.Context) error {
 // @Tags Device
 // @Produce json
 // @Param status query string false "Filter by status: pending, approved, rejected"
-// @Success 200 {object} response.Response{data=[]models.Device} "List of devices"
+// @Param page query int false "Page number"
+// @Param limit query int false "Items per page"
+// @Success 200 {object} response.Response{data=models.PaginatedResponse} "List of devices"
 // @Failure 403 {object} response.Response "Forbidden"
 // @Router /v1/admin/devices [get]
 func (h *DeviceHandler) AdminList(c echo.Context) error {
@@ -110,7 +119,12 @@ func (h *DeviceHandler) AdminList(c echo.Context) error {
 		return response.Error(c, appErrors.ErrInvalidInput)
 	}
 
-	result, err := h.service.ListByStatus(c.Request().Context(), q.Status)
+	var pq models.PaginationQuery
+	if err := c.Bind(&pq); err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	result, err := h.service.ListByStatus(c.Request().Context(), q.Status, pq)
 	if err != nil {
 		return response.HandleError(c, err)
 	}

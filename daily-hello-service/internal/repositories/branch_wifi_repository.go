@@ -12,7 +12,9 @@ type (
 	BranchWifiRepository interface {
 		Create(ctx context.Context, wifi *models.BranchWifi) error
 		FindByID(ctx context.Context, id uint) (*models.BranchWifi, error)
-		FindByBranchID(ctx context.Context, branchID uint) ([]models.BranchWifi, error)
+		FindAll(ctx context.Context, pq models.PaginationQuery) ([]models.BranchWifi, int64, error)
+		FindByBranchID(ctx context.Context, branchID uint, pq models.PaginationQuery) ([]models.BranchWifi, int64, error)
+		FindByBranchIDs(ctx context.Context, branchIDs []uint, pq models.PaginationQuery) ([]models.BranchWifi, int64, error)
 		FindByBSSID(ctx context.Context, bssid string) (*models.BranchWifi, error)
 		Update(ctx context.Context, wifi *models.BranchWifi) error
 		Delete(ctx context.Context, id uint) error
@@ -40,13 +42,50 @@ func (r *branchWifiRepository) FindByID(ctx context.Context, id uint) (*models.B
 	return &wifi, nil
 }
 
-func (r *branchWifiRepository) FindByBranchID(ctx context.Context, branchID uint) ([]models.BranchWifi, error) {
-	var items []models.BranchWifi
-	err := r.db.WithContext(ctx).Where("branch_id = ?", branchID).Find(&items).Error
-	if err != nil {
-		return nil, err
+func (r *branchWifiRepository) FindAll(ctx context.Context, pq models.PaginationQuery) ([]models.BranchWifi, int64, error) {
+	var total int64
+	query := r.db.WithContext(ctx).Model(&models.BranchWifi{})
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
-	return items, nil
+
+	var items []models.BranchWifi
+	err := query.
+		Order("created_at DESC").
+		Offset(pq.GetOffset()).
+		Limit(pq.GetLimit()).
+		Find(&items).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return items, total, nil
+}
+
+func (r *branchWifiRepository) FindByBranchID(ctx context.Context, branchID uint, pq models.PaginationQuery) ([]models.BranchWifi, int64, error) {
+	return r.FindByBranchIDs(ctx, []uint{branchID}, pq)
+}
+
+func (r *branchWifiRepository) FindByBranchIDs(ctx context.Context, branchIDs []uint, pq models.PaginationQuery) ([]models.BranchWifi, int64, error) {
+	var total int64
+	query := r.db.WithContext(ctx).Model(&models.BranchWifi{}).Where("branch_id IN ?", branchIDs)
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var items []models.BranchWifi
+	err := query.
+		Order("created_at DESC").
+		Offset(pq.GetOffset()).
+		Limit(pq.GetLimit()).
+		Find(&items).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return items, total, nil
 }
 
 func (r *branchWifiRepository) FindByBSSID(ctx context.Context, bssid string) (*models.BranchWifi, error) {

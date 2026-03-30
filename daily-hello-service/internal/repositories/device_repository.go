@@ -29,13 +29,21 @@ func (r *DeviceRepository) FindByID(ctx context.Context, id uint) (*models.Devic
 	return &device, nil
 }
 
-func (r *DeviceRepository) FindByUserID(ctx context.Context, userID uint) ([]models.Device, error) {
+func (r *DeviceRepository) FindByUserID(ctx context.Context, userID uint, pq models.PaginationQuery) ([]models.Device, int64, error) {
+	var total int64
+	r.db.WithContext(ctx).Model(&models.Device{}).Where("user_id = ?", userID).Count(&total)
+
 	var items []models.Device
-	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&items).Error
+	err := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("created_at DESC").
+		Offset(pq.GetOffset()).
+		Limit(pq.GetLimit()).
+		Find(&items).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return items, nil
+	return items, total, nil
 }
 
 func (r *DeviceRepository) FindByDeviceID(ctx context.Context, deviceID string) (*models.Device, error) {
@@ -58,13 +66,22 @@ func (r *DeviceRepository) FindByUserIDAndDeviceID(ctx context.Context, userID u
 	return &device, nil
 }
 
-func (r *DeviceRepository) FindByStatus(ctx context.Context, status string) ([]models.Device, error) {
+func (r *DeviceRepository) FindByStatus(ctx context.Context, status string, pq models.PaginationQuery) ([]models.Device, int64, error) {
+	var total int64
+	r.db.WithContext(ctx).Model(&models.Device{}).Where("status = ?", status).Count(&total)
+
 	var items []models.Device
-	err := r.db.WithContext(ctx).Preload("User").Where("status = ?", status).Find(&items).Error
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Where("status = ?", status).
+		Order("created_at DESC").
+		Offset(pq.GetOffset()).
+		Limit(pq.GetLimit()).
+		Find(&items).Error
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return items, nil
+	return items, total, nil
 }
 
 func (r *DeviceRepository) Update(ctx context.Context, device *models.Device) error {

@@ -57,21 +57,35 @@ func (s *DeviceService) GetStatus(ctx context.Context, userID uint, deviceID str
 }
 
 // GetByUserID lists all devices belonging to a user.
-func (s *DeviceService) GetByUserID(ctx context.Context, userID uint) ([]models.Device, error) {
-	items, err := s.repo.FindByUserID(ctx, userID)
+func (s *DeviceService) GetByUserID(ctx context.Context, userID uint, pq models.PaginationQuery) (*models.PaginatedResponse, error) {
+	items, total, err := s.repo.FindByUserID(ctx, userID, pq)
 	if err != nil {
 		return nil, appErrors.ErrInternal
 	}
-	return items, nil
+	return &models.PaginatedResponse{
+		Items: items,
+		Meta: models.PaginationMeta{
+			Page:  pq.GetPage(),
+			Limit: pq.GetLimit(),
+			Total: total,
+		},
+	}, nil
 }
 
 // ListByStatus returns all devices filtered by status (admin use).
-func (s *DeviceService) ListByStatus(ctx context.Context, status string) ([]models.Device, error) {
-	items, err := s.repo.FindByStatus(ctx, status)
+func (s *DeviceService) ListByStatus(ctx context.Context, status string, pq models.PaginationQuery) (*models.PaginatedResponse, error) {
+	items, total, err := s.repo.FindByStatus(ctx, status, pq)
 	if err != nil {
 		return nil, appErrors.ErrInternal
 	}
-	return items, nil
+	return &models.PaginatedResponse{
+		Items: items,
+		Meta: models.PaginationMeta{
+			Page:  pq.GetPage(),
+			Limit: pq.GetLimit(),
+			Total: total,
+		},
+	}, nil
 }
 
 // Approve sets a device status to approved.
