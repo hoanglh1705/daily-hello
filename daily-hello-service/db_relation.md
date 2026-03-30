@@ -128,10 +128,15 @@ CREATE TABLE attendance (
     check_out_lat DOUBLE PRECISION,
     check_out_lng DOUBLE PRECISION,
 
-    wifi_bssid VARCHAR(100),
-    device_id VARCHAR(100),
+    checkin_type VARCHAR(20), -- wifi, gps
+    checkout_type VARCHAR(20), -- wifi, gps
+    checkin_wifi_bssid VARCHAR(100),
+    checkout_wifi_bssid VARCHAR(100),
+    checkin_device_id VARCHAR(100),
+    checkout_device_id VARCHAR(100),
 
-    status VARCHAR(20), -- on_time, late, absent
+    checkin_status VARCHAR(20), -- on_time, late
+    checkout_status VARCHAR(20), -- on_time, early
 
     created_at TIMESTAMP DEFAULT NOW()
 );

@@ -60,15 +60,21 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID uint, req models
 	now := time.Now().In(s.timezone)
 	checkInLat := req.Lat
 	checkInLng := req.Lng
+	checkInType := "gps"
+	if validWifi {
+		checkInType = "wifi"
+	}
+
 	att := &models.Attendance{
-		UserID:      userID,
-		BranchID:    req.BranchID,
-		CheckInTime: &now,
-		CheckInLat:  &checkInLat,
-		CheckInLng:  &checkInLng,
-		WifiBSSID:   req.WifiBSSID,
-		DeviceID:    req.DeviceID,
-		Status:      models.StatusOnTime, // TODO: compute based on shift schedule
+		UserID:           userID,
+		BranchID:         req.BranchID,
+		CheckInTime:      &now,
+		CheckInLat:       &checkInLat,
+		CheckInLng:       &checkInLng,
+		CheckInWifiBSSID: req.WifiBSSID,
+		CheckInDeviceID:  req.DeviceID,
+		CheckInType:      checkInType,
+		CheckInStatus:    models.StatusOnTime, // TODO: compute based on shift schedule
 	}
 
 	if err := s.repo.Create(ctx, att); err != nil {
@@ -100,16 +106,36 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID uint, req model
 	}
 
 	// 4. Update check-out on existing record
+	checkOutType := "gps"
+	if validWifi {
+		checkOutType = "wifi"
+	}
+
 	now := time.Now().In(s.timezone)
 	checkOutLat := req.Lat
 	checkOutLng := req.Lng
-	if err := s.repo.UpdateCheckOut(ctx, att.ID, now, &checkOutLat, &checkOutLng); err != nil {
+
+	updates := map[string]interface{}{
+		"check_out_time":      now,
+		"check_out_lat":       checkOutLat,
+		"check_out_lng":       checkOutLng,
+		"checkout_wifi_bssid": req.WifiBSSID,
+		"checkout_device_id":  req.DeviceID,
+		"checkout_type":       checkOutType,
+		"checkout_status":     models.StatusOnTime, // TODO: compute
+	}
+
+	if err := s.repo.UpdateCheckOut(ctx, att.ID, updates); err != nil {
 		return nil, appErrors.ErrInternal
 	}
 
 	att.CheckOutTime = &now
 	att.CheckOutLat = &checkOutLat
 	att.CheckOutLng = &checkOutLng
+	att.CheckOutType = checkOutType
+	att.CheckOutWifiBSSID = req.WifiBSSID
+	att.CheckOutDeviceID = req.DeviceID
+	att.CheckOutStatus = models.StatusOnTime
 
 	return att, nil
 }

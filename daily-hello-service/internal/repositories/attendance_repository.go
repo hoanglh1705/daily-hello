@@ -57,12 +57,7 @@ func (r *AttendanceRepository) FindTodayByUserID(ctx context.Context, userID uin
 	return &att, nil
 }
 
-func (r *AttendanceRepository) UpdateCheckOut(ctx context.Context, id uint, checkOutTime time.Time, lat, lng *float64) error {
-	updates := map[string]interface{}{
-		"check_out_time": checkOutTime,
-		"check_out_lat":  lat,
-		"check_out_lng":  lng,
-	}
+func (r *AttendanceRepository) UpdateCheckOut(ctx context.Context, id uint, updates map[string]interface{}) error {
 	return r.db.WithContext(ctx).Model(&models.Attendance{}).Where("id = ?", id).Updates(updates).Error
 }
 
@@ -85,7 +80,7 @@ func (r *AttendanceRepository) List(ctx context.Context, filter models.Attendanc
 		query = query.Where("created_at <= ?", filter.DateTo)
 	}
 	if filter.Status != "" {
-		query = query.Where("status = ?", filter.Status)
+		query = query.Where("checkin_status = ?", filter.Status)
 	}
 
 	if err := query.Count(&total).Error; err != nil {
