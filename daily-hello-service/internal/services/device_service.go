@@ -73,8 +73,8 @@ func (s *DeviceService) GetByUserID(ctx context.Context, userID uint, pq models.
 }
 
 // ListByStatus returns all devices filtered by status (admin use).
-func (s *DeviceService) ListByStatus(ctx context.Context, status string, pq models.PaginationQuery) (*models.PaginatedResponse, error) {
-	items, total, err := s.repo.FindByStatus(ctx, status, pq)
+func (s *DeviceService) ListByStatus(ctx context.Context, status string, branchID *uint, pq models.PaginationQuery) (*models.PaginatedResponse, error) {
+	items, total, err := s.repo.FindByStatus(ctx, status, branchID, pq)
 	if err != nil {
 		return nil, appErrors.ErrInternal
 	}

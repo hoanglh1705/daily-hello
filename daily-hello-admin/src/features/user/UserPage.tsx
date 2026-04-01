@@ -8,6 +8,7 @@ import { getUsers, getBranches, createUser, updateUser } from './api'
 import type { User } from './types'
 import UserTable from './components/UserTable'
 import UserForm from './components/UserForm'
+import { getCurrentBranchId } from '@/services/tokenStorage'
 
 export default function UserPage() {
   const [data, setData] = useState<User[]>([])
@@ -22,7 +23,7 @@ export default function UserPage() {
   const [keyword, setKeyword] = useState('')
   const debouncedKeyword = useDebounce(keyword)
 
-  const [branchId, setBranchId] = useState<number | null>(null)
+  const [branchId, setBranchId] = useState<number | null>(getCurrentBranchId())
 
   // Branch dropdown state
   const [branchOptions, setBranchOptions] = useState<SearchSelectOption[]>([])

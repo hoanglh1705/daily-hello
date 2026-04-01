@@ -36,5 +36,6 @@ type DeviceStatusQuery struct {
 }
 
 type DeviceListQuery struct {
-	Status string `query:"status"`
+	Status   string `query:"status"`
+	BranchID *uint  `query:"branch_id"`
 }

@@ -7,6 +7,7 @@ const navItems = [
   { to: '/branches', label: 'Chi nhanh' },
   { to: '/wifi', label: 'WiFi' },
   { to: '/attendance', label: 'Cham cong' },
+  { to: '/devices', label: 'Thiet bi' },
 ]
 
 export default function AdminLayout() {

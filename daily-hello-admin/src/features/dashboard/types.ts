@@ -1,27 +1,30 @@
-export type DashboardStats = {
-  total_employees: number
-  on_time_percentage: number
-  on_time_change: number
-  late_arrivals: number
-  late_arrivals_change: number
+export type DashboardOverviewResponse = {
+  summary: {
+    total_employee: number
+    on_time: { percentage: number; trend: number }
+    late_arrival: { count: number; trend: number }
+  }
+  attendance_trends: Array<{
+    day: string
+    date: string
+    present_count: number
+  }>
+  quick_stats: {
+    checked_in_today: number
+    pending_approval: number
+    active_branches: number
+  }
 }
 
-export type AttendanceTrend = {
-  day: string
-  label: string
-  check_in_count: number
-  total: number
-}
-
-export type RecentActivity = {
+export type RecentActivityItem = {
   id: number
   user_name: string
-  action: string
+  avatar_text: string
+  action_type: string
   time: string
+  timestamp: string
 }
 
-export type DashboardData = {
-  stats: DashboardStats
-  trends: AttendanceTrend[]
-  recent_activities: RecentActivity[]
+export type DashboardRecentActivitiesResponse = {
+  items: RecentActivityItem[]
 }

@@ -32,7 +32,7 @@ type (
 		SensitiveFields map[string]string `mapstructure:"sensitive_fields"`
 		Database        databaseConfig    `mapstructure:"database"`
 		AutoMigration   bool              `mapstructure:"auto_migration"`
-		Cache           cacheConfig       `mapstructure:"cache"`
+		Cache           cacheConfig       `mapstructure:"redis_cache"`
 		JwtConfig       jwtConfig         `mapstructure:"jwt_config"`
 		HmacConfig      hmacConfig        `mapstructure:"hmac_config"`
 		Timezone        string            `mapstructure:"timezone"`

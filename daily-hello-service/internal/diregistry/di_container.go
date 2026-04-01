@@ -34,6 +34,7 @@ const (
 	ShiftRepositoryDIName             string = "ShiftRepository"
 	AttendanceSummaryRepositoryDIName string = "AttendanceSummaryRepository"
 	DeviceRepositoryDIName            string = "DeviceRepository"
+	DashboardRepositoryDIName         string = "DashboardRepository"
 
 	// * Adapter
 	JWTMiddlewareDIName string = "JWTMiddleware"
@@ -46,6 +47,7 @@ const (
 	BranchWifiServiceDIName string = "BranchWifiService"
 	AttendanceServiceDIName string = "AttendanceService"
 	DeviceServiceDIName     string = "DeviceService"
+	DashboardServiceDIName  string = "DashboardService"
 
 	// * Api
 	AuthAPIDIName       string = "AuthAPI"
@@ -54,6 +56,7 @@ const (
 	BranchWifiAPIDIName string = "BranchWifiAPI"
 	AttendanceAPIDIName string = "AttendanceAPI"
 	DeviceAPIDIName     string = "DeviceAPI"
+	DashboardAPIDIName  string = "DashboardAPI"
 
 	// Public
 	PublicCompanyAPIDIName string = "PublicCompanyAPI"

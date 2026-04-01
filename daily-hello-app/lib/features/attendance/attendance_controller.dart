@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:wifi_signal_strength_indicator/wifi_signal_strength.dart';
 import '../../core/network/api_response.dart';
+import '../../core/utils/gps_fraud_detector.dart';
 import '../../core/utils/location_permission_utils.dart';
 import '../../models/attendance.dart';
 import '../../models/branch_wifi.dart';
@@ -19,6 +20,7 @@ class AttendanceController extends ChangeNotifier {
   bool isLoading = false;
   bool isLoadingHistory = false;
   String? errorMessage;
+  String? fraudWarning;
   int currentPage = 1;
   bool hasMore = true;
 
@@ -135,10 +137,20 @@ class AttendanceController extends ChangeNotifier {
   Future<bool> checkIn() async {
     isLoading = true;
     errorMessage = null;
+    fraudWarning = null;
     notifyListeners();
 
     try {
       final position = await _getPosition();
+
+      // Fraud detection (GPS spoof, VPN, root/jailbreak)
+      final fraudResult = await GpsFraudDetector.detect(position);
+      if (fraudResult.isFraudulent) {
+        fraudWarning = fraudResult.reason;
+        errorMessage = 'Phát hiện gian lận. ${fraudResult.reason}';
+        return false;
+      }
+
       final wifiInfo = await _getWifiInfo();
       todayAttendance = await _service.checkIn(
         lat: position.latitude,
@@ -160,10 +172,20 @@ class AttendanceController extends ChangeNotifier {
   Future<bool> checkOut() async {
     isLoading = true;
     errorMessage = null;
+    fraudWarning = null;
     notifyListeners();
 
     try {
       final position = await _getPosition();
+
+      // Fraud detection (GPS spoof, VPN, root/jailbreak)
+      final fraudResult = await GpsFraudDetector.detect(position);
+      if (fraudResult.isFraudulent) {
+        fraudWarning = fraudResult.reason;
+        errorMessage = 'Phát hiện gian lận. ${fraudResult.reason}';
+        return false;
+      }
+
       final wifiInfo = await _getWifiInfo();
       todayAttendance = await _service.checkOut(
         lat: position.latitude,

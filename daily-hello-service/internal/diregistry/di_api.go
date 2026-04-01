@@ -78,6 +78,17 @@ func initApiBuilder() {
 					return nil
 				},
 			},
+			di.Def{
+				Name:  DashboardAPIDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					svc := ctn.Get(DashboardServiceDIName).(*services.DashboardService)
+					return handlers.NewDashboardHandler(svc), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
 		)
 
 		return arr

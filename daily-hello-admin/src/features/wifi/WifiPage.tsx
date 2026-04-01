@@ -10,6 +10,7 @@ import { getBranches } from '@/features/branch/api'
 import type { Wifi } from './types'
 import WifiTable from './components/WifiTable'
 import WifiForm from './components/WifiForm'
+import { getCurrentBranchId } from '@/services/tokenStorage'
 
 export default function WifiPage() {
   const [data, setData] = useState<Wifi[]>([])
@@ -17,7 +18,7 @@ export default function WifiPage() {
   const [page, setPage] = useState(DEFAULT_PAGE)
   const [total, setTotal] = useState(0)
 
-  const [branchId, setBranchId] = useState<number | null>(null)
+  const [branchId, setBranchId] = useState<number | null>(getCurrentBranchId())
   const [branchSearch, setBranchSearch] = useState('')
   const debouncedBranchSearch = useDebounce(branchSearch)
   const [branchOptions, setBranchOptions] = useState<SearchSelectOption[]>([])

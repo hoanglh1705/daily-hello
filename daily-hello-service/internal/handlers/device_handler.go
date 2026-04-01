@@ -124,7 +124,7 @@ func (h *DeviceHandler) AdminList(c echo.Context) error {
 		return response.Error(c, appErrors.ErrInvalidInput)
 	}
 
-	result, err := h.service.ListByStatus(c.Request().Context(), q.Status, pq)
+	result, err := h.service.ListByStatus(c.Request().Context(), q.Status, q.BranchID, pq)
 	if err != nil {
 		return response.HandleError(c, err)
 	}

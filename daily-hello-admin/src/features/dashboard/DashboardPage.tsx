@@ -1,34 +1,9 @@
 import { useEffect, useState } from 'react'
-import { getDashboard } from './api'
+import { getDashboardOverview, getRecentActivities } from './api'
 import { getBranches } from '@/features/branch/api'
-import type { DashboardData, AttendanceTrend } from './types'
+import type { DashboardOverviewResponse, RecentActivityItem } from './types'
 import type { Branch } from '@/features/branch/types'
-
-const MOCK_TRENDS: AttendanceTrend[] = [
-  { day: '2024-10-21', label: 'Mon', check_in_count: 65, total: 100 },
-  { day: '2024-10-22', label: 'Tue', check_in_count: 72, total: 100 },
-  { day: '2024-10-23', label: 'Wed', check_in_count: 90, total: 100 },
-  { day: '2024-10-24', label: 'Thu', check_in_count: 55, total: 100 },
-  { day: '2024-10-25', label: 'Fri', check_in_count: 40, total: 100 },
-  { day: '2024-10-26', label: 'Sat', check_in_count: 48, total: 100 },
-  { day: '2024-10-27', label: 'Sun', check_in_count: 45, total: 100 },
-]
-
-const MOCK_DATA: DashboardData = {
-  stats: {
-    total_employees: 1284,
-    on_time_percentage: 94,
-    on_time_change: 2.4,
-    late_arrivals: 12,
-    late_arrivals_change: -3,
-  },
-  trends: MOCK_TRENDS,
-  recent_activities: [
-    { id: 1, user_name: 'Nguyen Van A', action: 'Check-in', time: '08:01' },
-    { id: 2, user_name: 'Tran Thi B', action: 'Check-in', time: '08:15' },
-    { id: 3, user_name: 'Le Van C', action: 'Late arrival', time: '09:30' },
-  ],
-}
+import { getCurrentBranchId } from '@/services/tokenStorage'
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', {
@@ -40,9 +15,10 @@ function formatDate(date: Date): string {
 }
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData>(MOCK_DATA)
+  const [overview, setOverview] = useState<DashboardOverviewResponse | null>(null)
+  const [activities, setActivities] = useState<RecentActivityItem[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
-  const [selectedBranch, setSelectedBranch] = useState<number | null>(null)
+  const [selectedBranch, setSelectedBranch] = useState<number | null>(getCurrentBranchId())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -53,18 +29,24 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setLoading(true)
-    getDashboard(selectedBranch ? { branch_id: selectedBranch } : undefined)
-      .then((res) => {
-        if (res.data) setData(res.data)
-      })
-      .catch(() => {
-        // Use mock data as fallback
-      })
-      .finally(() => setLoading(false))
+    const params = selectedBranch ? { branch_id: selectedBranch } : undefined
+    
+    Promise.all([
+      getDashboardOverview(params),
+      getRecentActivities(params)
+    ])
+    .then(([overviewRes, activitiesRes]) => {
+      setOverview(overviewRes.data)
+      setActivities(activitiesRes.data.items || [])
+    })
+    .catch(() => {
+      // Handle error gracefully if needed
+    })
+    .finally(() => setLoading(false))
   }, [selectedBranch])
 
-  const { stats, trends } = data
-  const maxCount = Math.max(...trends.map((t) => t.check_in_count), 1)
+  const trends = overview?.attendance_trends || []
+  const maxCount = Math.max(...trends.map((t) => t.present_count), 1)
   const today = new Date()
 
   return (
@@ -90,7 +72,7 @@ export default function DashboardPage() {
           <div>
             <span className="stats-total-label">Total Employee</span>
             <span className="stats-total-value">
-              {loading ? '—' : stats.total_employees.toLocaleString()}
+              {loading ? '—' : overview?.summary.total_employee.toLocaleString() || '0'}
             </span>
           </div>
         </div>
@@ -100,10 +82,10 @@ export default function DashboardPage() {
         <div className="stats-card stats-card-success">
           <span className="stats-card-label">On Time</span>
           <div className="stats-card-value-row">
-            <span className="stats-card-value">{loading ? '—' : `${stats.on_time_percentage}%`}</span>
-            {stats.on_time_change !== 0 && (
-              <span className={`stats-change ${stats.on_time_change > 0 ? 'positive' : 'negative'}`}>
-                {stats.on_time_change > 0 ? '+' : ''}{stats.on_time_change}%
+            <span className="stats-card-value">{loading ? '—' : `${overview?.summary.on_time.percentage?.toFixed(1) || 0}%`}</span>
+            {!!overview?.summary.on_time.trend && (
+              <span className={`stats-change ${overview.summary.on_time.trend > 0 ? 'positive' : 'negative'}`}>
+                {overview.summary.on_time.trend > 0 ? '+' : ''}{overview.summary.on_time.trend.toFixed(1)}%
               </span>
             )}
           </div>
@@ -111,10 +93,10 @@ export default function DashboardPage() {
         <div className="stats-card stats-card-danger">
           <span className="stats-card-label">Late Arrival</span>
           <div className="stats-card-value-row">
-            <span className="stats-card-value">{loading ? '—' : stats.late_arrivals}</span>
-            {stats.late_arrivals_change !== 0 && (
-              <span className={`stats-change ${stats.late_arrivals_change < 0 ? 'positive' : 'negative'}`}>
-                {stats.late_arrivals_change > 0 ? '+' : ''}{stats.late_arrivals_change}
+            <span className="stats-card-value">{loading ? '—' : (overview?.summary.late_arrival.count || 0)}</span>
+            {!!overview?.summary.late_arrival.trend && (
+              <span className={`stats-change ${overview.summary.late_arrival.trend < 0 ? 'positive' : 'negative'}`}>
+                {overview.summary.late_arrival.trend > 0 ? '+' : ''}{overview.summary.late_arrival.trend}
               </span>
             )}
           </div>
@@ -150,16 +132,19 @@ export default function DashboardPage() {
         </div>
         <div className="chart-container">
           {trends.map((t, i) => (
-            <div className="chart-bar-group" key={t.day}>
+            <div className="chart-bar-group" key={t.date}>
               <div className="chart-bar-wrapper">
                 <div
-                  className={`chart-bar ${i === trends.findIndex((x) => x.check_in_count === maxCount) ? 'chart-bar-highlight' : ''}`}
-                  style={{ height: `${(t.check_in_count / maxCount) * 100}%` }}
+                  className={`chart-bar ${i === trends.findIndex((x) => x.present_count === maxCount) ? 'chart-bar-highlight' : ''}`}
+                  style={{ height: `${maxCount > 0 ? (t.present_count / maxCount) * 100 : 0}%` }}
                 />
               </div>
-              <span className="chart-label">{t.label}</span>
+              <span className="chart-label">{t.day}</span>
             </div>
           ))}
+          {trends.length === 0 && !loading && (
+            <div className="text-gray-400 text-sm mt-4 text-center" style={{ width: '100%', position: 'absolute' }}>No trend data</div>
+          )}
         </div>
       </div>
 
@@ -178,18 +163,21 @@ export default function DashboardPage() {
             <h2>Recent Activity</h2>
           </div>
           <div className="activity-list">
-            {data.recent_activities.map((a) => (
+            {activities.map((a) => (
               <div className="activity-item" key={a.id}>
                 <div className="activity-avatar">
-                  {a.user_name.charAt(0)}
+                  {a.avatar_text || a.user_name.charAt(0)}
                 </div>
                 <div className="activity-info">
                   <span className="activity-name">{a.user_name}</span>
-                  <span className="activity-action">{a.action}</span>
+                  <span className="activity-action">{a.action_type}</span>
                 </div>
                 <span className="activity-time">{a.time}</span>
               </div>
             ))}
+            {activities.length === 0 && !loading && (
+              <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: '1rem', textAlign: 'center' }}>No recent activities</div>
+            )}
           </div>
         </div>
 
@@ -208,15 +196,15 @@ export default function DashboardPage() {
           <div className="quick-stats-list">
             <div className="quick-stat-item">
               <span className="quick-stat-label">Checked In Today</span>
-              <span className="quick-stat-value">{Math.round(stats.total_employees * stats.on_time_percentage / 100)}</span>
+              <span className="quick-stat-value">{loading ? '—' : overview?.quick_stats?.checked_in_today || 0}</span>
             </div>
             <div className="quick-stat-item">
               <span className="quick-stat-label">Pending Approval</span>
-              <span className="quick-stat-value">{stats.late_arrivals}</span>
+              <span className="quick-stat-value">{loading ? '—' : overview?.quick_stats?.pending_approval || 0}</span>
             </div>
             <div className="quick-stat-item">
               <span className="quick-stat-label">Active Branches</span>
-              <span className="quick-stat-value">{branches.length}</span>
+              <span className="quick-stat-value">{loading ? '—' : overview?.quick_stats?.active_branches || 0}</span>
             </div>
           </div>
         </div>

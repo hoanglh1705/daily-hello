@@ -135,8 +135,8 @@ CREATE TABLE attendance (
     check_in_device_id VARCHAR(100),
     check_out_device_id VARCHAR(100),
 
-    check_in_status VARCHAR(20), -- on_time, late
-    check_out_status VARCHAR(20), -- on_time, early
+    check_in_status VARCHAR(20), -- waiting_approve, approved, rejected
+    check_out_status VARCHAR(20), -- waiting_approve, approved, rejected
 
     created_at TIMESTAMP DEFAULT NOW()
 );

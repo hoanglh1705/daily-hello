@@ -98,6 +98,17 @@ func initUseCasesBuilder() {
 					return nil
 				},
 			},
+			di.Def{
+				Name:  DashboardServiceDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					repo := ctn.Get(DashboardRepositoryDIName).(repositories.DashboardRepository)
+					return services.NewDashboardService(repo), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
 		)
 
 		return arr

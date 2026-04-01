@@ -16,6 +16,10 @@ database:
   search_path: public
   timezone: Asia/Ho_Chi_Minh
   ssl_mode: disable
+redis_cache:
+  host: localhost
+  port: 6379
+  password: ''
 auto_migration: true
 jwt_config:
   secret_key: secret

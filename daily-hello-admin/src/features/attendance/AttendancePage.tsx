@@ -12,13 +12,14 @@ import type { Attendance } from './types'
 import AttendanceTable from './components/AttendanceTable'
 import { getBranches } from '../branch/api'
 import type { Branch } from '../branch/types'
+import { getCurrentBranchId } from '@/services/tokenStorage'
 
 export default function AttendancePage() {
   const [data, setData] = useState<Attendance[]>([])
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(DEFAULT_PAGE)
   const [total, setTotal] = useState(0)
-  const [branchId, setBranchId] = useState<number | ''>('')
+  const [branchId, setBranchId] = useState<number | ''>(getCurrentBranchId() ?? '')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [branches, setBranches] = useState<Branch[]>([])

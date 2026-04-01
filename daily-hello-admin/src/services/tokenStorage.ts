@@ -32,3 +32,30 @@ export function clearTokens() {
 export function isAuthenticated(): boolean {
   return !!getAccessToken()
 }
+
+type TokenPayload = {
+  branch_id?: number | null
+}
+
+function parseTokenPayload(): TokenPayload | null {
+  const token = getAccessToken()
+  if (!token) return null
+
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+
+  try {
+    const payload = parts[1]
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(Math.ceil(parts[1].length / 4) * 4, '=')
+    return JSON.parse(window.atob(payload)) as TokenPayload
+  } catch {
+    return null
+  }
+}
+
+export function getCurrentBranchId(): number | null {
+  const payload = parseTokenPayload()
+  return typeof payload?.branch_id === 'number' ? payload.branch_id : null
+}

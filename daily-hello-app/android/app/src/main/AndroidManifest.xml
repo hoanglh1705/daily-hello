@@ -47,5 +47,34 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Query known fake GPS apps for fraud detection -->
+        <package android:name="com.lexa.fakegps" />
+        <package android:name="com.incorporateapps.fakegps.fre" />
+        <package android:name="com.fakegps.mock" />
+        <package android:name="com.evezzon.fakegps" />
+        <package android:name="com.gsmartstudio.fakegps" />
+        <package android:name="com.lkr.fakelocation" />
+        <package android:name="com.marlon.floating.fake.location" />
+        <package android:name="com.location.faker" />
+        <package android:name="com.theappninjas.fakegpsjoystick" />
+        <package android:name="com.incorporateapps.fakegps" />
+        <package android:name="org.hola.gpslocation" />
+        <package android:name="com.divi.fakeGPS" />
+        <package android:name="fr.dvilleneuve.lockito" />
+        <package android:name="com.rosteam.gpsemulator" />
+        <package android:name="com.blogspot.newlooper.flp" />
+        <package android:name="ru.gavrikov.mocklocations" />
+        <package android:name="com.adjustyourgps.fake_gps_location" />
+        <!-- Query known root management apps -->
+        <package android:name="com.topjohnwu.magisk" />
+        <package android:name="eu.chainfire.supersu" />
+        <package android:name="com.koushikdutta.superuser" />
+        <package android:name="com.noshufou.android.su" />
+        <package android:name="com.thirdparty.superuser" />
+        <package android:name="com.yellowes.su" />
+        <package android:name="com.devadvance.rootcloak" />
+        <package android:name="com.devadvance.rootcloakplus" />
+        <package android:name="de.robv.android.xposed.installer" />
+        <package android:name="com.saurik.substrate" />
     </queries>
 </manifest>

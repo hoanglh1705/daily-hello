@@ -404,6 +404,37 @@ class _CheckInPageState extends State<CheckInPage> {
                     ),
                     const SizedBox(height: 16),
 
+                    // Fraud warning message
+                    if (controller.fraudWarning != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.red[300]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.gps_off,
+                                size: 18, color: Colors.red[700]),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                controller.fraudWarning!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+
                     // WiFi error message
                     if (controller.isWifiChecked &&
                         !controller.isWifiValid &&
