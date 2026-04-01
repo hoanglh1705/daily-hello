@@ -6,6 +6,7 @@ import (
 
 	"daily-hello-service/internal/models"
 	appErrors "daily-hello-service/internal/pkg/errors"
+	"daily-hello-service/internal/pkg/imagehelper"
 	"daily-hello-service/internal/repositories"
 
 	"gorm.io/gorm"
@@ -90,8 +91,17 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID uint, req model
 	// 1. Verify checked in today
 	todayStart, tomorrowStart := s.todayRange()
 	att, err := s.repo.FindTodayCheckIn(ctx, userID, todayStart, tomorrowStart)
+	isNewRecord := false
 	if err != nil {
-		return nil, appErrors.ErrNotCheckedIn
+		if err == gorm.ErrRecordNotFound {
+			isNewRecord = true
+			att = &models.Attendance{
+				UserID:   userID,
+				BranchID: req.BranchID,
+			}
+		} else {
+			return nil, appErrors.ErrInternal
+		}
 	}
 
 	// 2. Fetch branch
@@ -119,27 +129,40 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID uint, req model
 	checkOutLat := req.Lat
 	checkOutLng := req.Lng
 
-	updates := map[string]interface{}{
-		"check_out_time":       now,
-		"check_out_lat":        checkOutLat,
-		"check_out_lng":        checkOutLng,
-		"check_out_wifi_bssid": req.WifiBSSID,
-		"check_out_device_id":  req.DeviceID,
-		"check_out_type":       checkOutType,
-		"check_out_status":     checkOutStatus,
-	}
+	if isNewRecord {
+		att.CheckOutTime = &now
+		att.CheckOutLat = &checkOutLat
+		att.CheckOutLng = &checkOutLng
+		att.CheckOutType = checkOutType
+		att.CheckOutWifiBSSID = req.WifiBSSID
+		att.CheckOutDeviceID = req.DeviceID
+		att.CheckOutStatus = checkOutStatus
+		if err := s.repo.Create(ctx, att); err != nil {
+			return nil, appErrors.ErrInternal
+		}
+	} else {
+		updates := map[string]interface{}{
+			"check_out_time":       now,
+			"check_out_lat":        checkOutLat,
+			"check_out_lng":        checkOutLng,
+			"check_out_wifi_bssid": req.WifiBSSID,
+			"check_out_device_id":  req.DeviceID,
+			"check_out_type":       checkOutType,
+			"check_out_status":     checkOutStatus,
+		}
 
-	if err := s.repo.UpdateCheckOut(ctx, att.ID, updates); err != nil {
-		return nil, appErrors.ErrInternal
-	}
+		if err := s.repo.UpdateCheckOut(ctx, att.ID, updates); err != nil {
+			return nil, appErrors.ErrInternal
+		}
 
-	att.CheckOutTime = &now
-	att.CheckOutLat = &checkOutLat
-	att.CheckOutLng = &checkOutLng
-	att.CheckOutType = checkOutType
-	att.CheckOutWifiBSSID = req.WifiBSSID
-	att.CheckOutDeviceID = req.DeviceID
-	att.CheckOutStatus = checkOutStatus
+		att.CheckOutTime = &now
+		att.CheckOutLat = &checkOutLat
+		att.CheckOutLng = &checkOutLng
+		att.CheckOutType = checkOutType
+		att.CheckOutWifiBSSID = req.WifiBSSID
+		att.CheckOutDeviceID = req.DeviceID
+		att.CheckOutStatus = checkOutStatus
+	}
 
 	return att, nil
 }
@@ -227,4 +250,127 @@ func (s *AttendanceService) todayRange() (time.Time, time.Time) {
 	now := time.Now().In(s.timezone)
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, s.timezone)
 	return today, today.Add(24 * time.Hour)
+}
+
+func (s *AttendanceService) CheckInGPS(ctx context.Context, userID uint, req models.AttendanceGPSRequest) (*models.Attendance, error) {
+	// 1. Fetch branch (just to validate it exists)
+	_, err := s.branchRepo.FindByID(ctx, req.BranchID)
+	if err != nil {
+		return nil, appErrors.ErrBranchNotFound
+	}
+
+	// 2. Validate location: GPS check-in does not enforce branch radius, it only records the position.
+
+	// 3. Process image
+	resizedImage, err := imagehelper.ResizeBase64Image(req.Image)
+	if err != nil {
+		return nil, appErrors.ErrInvalidInput
+	}
+
+	// 4. Check if already checked in today
+	todayStart, tomorrowStart := s.todayRange()
+	_, err = s.repo.FindTodayCheckIn(ctx, userID, todayStart, tomorrowStart)
+	if err == nil {
+		return nil, appErrors.ErrAlreadyCheckedIn
+	}
+	if err != gorm.ErrRecordNotFound {
+		return nil, appErrors.ErrInternal
+	}
+
+	// 5. Create attendance record with check-in
+	now := time.Now().In(s.timezone)
+	checkInLat := req.Lat
+	checkInLng := req.Lng
+
+	att := &models.Attendance{
+		UserID:           userID,
+		BranchID:         req.BranchID,
+		CheckInTime:      &now,
+		CheckInLat:       &checkInLat,
+		CheckInLng:       &checkInLng,
+		CheckInDeviceID:  req.DeviceID,
+		CheckInType:      "gps",
+		CheckInStatus:    models.StatusWaitingApprove,
+		CheckInImage:     resizedImage,
+	}
+
+	if err := s.repo.Create(ctx, att); err != nil {
+		return nil, appErrors.ErrInternal
+	}
+
+	return att, nil
+}
+
+func (s *AttendanceService) CheckOutGPS(ctx context.Context, userID uint, req models.AttendanceGPSRequest) (*models.Attendance, error) {
+	// 1. Verify checked in today
+	todayStart, tomorrowStart := s.todayRange()
+	att, err := s.repo.FindTodayCheckIn(ctx, userID, todayStart, tomorrowStart)
+	isNewRecord := false
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			isNewRecord = true
+			att = &models.Attendance{
+				UserID:   userID,
+				BranchID: req.BranchID,
+			}
+		} else {
+			return nil, appErrors.ErrInternal
+		}
+	}
+
+	// 2. Fetch branch (just to validate it exists)
+	_, err = s.branchRepo.FindByID(ctx, req.BranchID)
+	if err != nil {
+		return nil, appErrors.ErrBranchNotFound
+	}
+
+	// 3. Validate location: GPS check-out does not enforce branch radius, it only records the position.
+
+	// 4. Process image
+	resizedImage, err := imagehelper.ResizeBase64Image(req.Image)
+	if err != nil {
+		return nil, appErrors.ErrInvalidInput
+	}
+
+	// 5. Update check-out
+	now := time.Now().In(s.timezone)
+	checkOutLat := req.Lat
+	checkOutLng := req.Lng
+
+	if isNewRecord {
+		att.CheckOutTime = &now
+		att.CheckOutLat = &checkOutLat
+		att.CheckOutLng = &checkOutLng
+		att.CheckOutType = "gps"
+		att.CheckOutDeviceID = req.DeviceID
+		att.CheckOutStatus = models.StatusWaitingApprove
+		att.CheckOutImage = resizedImage
+		if err := s.repo.Create(ctx, att); err != nil {
+			return nil, appErrors.ErrInternal
+		}
+	} else {
+		updates := map[string]interface{}{
+			"check_out_time":       now,
+			"check_out_lat":        checkOutLat,
+			"check_out_lng":        checkOutLng,
+			"check_out_device_id":  req.DeviceID,
+			"check_out_type":       "gps",
+			"check_out_status":     models.StatusWaitingApprove,
+			"check_out_image":      resizedImage,
+		}
+
+		if err := s.repo.UpdateCheckOut(ctx, att.ID, updates); err != nil {
+			return nil, appErrors.ErrInternal
+		}
+
+		att.CheckOutTime = &now
+		att.CheckOutLat = &checkOutLat
+		att.CheckOutLng = &checkOutLng
+		att.CheckOutType = "gps"
+		att.CheckOutDeviceID = req.DeviceID
+		att.CheckOutStatus = models.StatusWaitingApprove
+		att.CheckOutImage = resizedImage
+	}
+
+	return att, nil
 }

@@ -89,6 +89,8 @@ func registerProtectedRoutes(g *echo.Group) {
 	attendanceGroup := g.Group("/attendance")
 	attendanceGroup.POST("/check-in", attendanceHandler.CheckIn, hmacMW.Validate())
 	attendanceGroup.POST("/check-out", attendanceHandler.CheckOut, hmacMW.Validate())
+	attendanceGroup.POST("/check-in-gps", attendanceHandler.CheckInGPS, hmacMW.Validate())
+	attendanceGroup.POST("/check-out-gps", attendanceHandler.CheckOutGPS, hmacMW.Validate())
 	attendanceGroup.GET("/my-history", attendanceHandler.GetMyHistory)
 	attendanceGroup.GET("/history", attendanceHandler.GetHistory)
 	attendanceGroup.GET("/today", attendanceHandler.GetToday)

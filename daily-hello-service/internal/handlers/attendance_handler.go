@@ -297,3 +297,65 @@ func (h *AttendanceHandler) RejectCheckOut(c echo.Context) error {
 
 	return response.Success(c, result)
 }
+
+// @Summary Check In GPS
+// @Description Check in with GPS and image
+// @Tags Attendance
+// @Accept json
+// @Produce json
+// @Param request body models.AttendanceGPSRequest true "Attendance GPS request data"
+// @Success 201 {object} response.Response{data=models.Attendance} "Check in successfully"
+// @Failure 400 {object} response.Response "Invalid input"
+// @Failure 500 {object} response.Response "Internal server error"
+// @Router /v1/attendance/check-in-gps [post]
+func (h *AttendanceHandler) CheckInGPS(c echo.Context) error {
+	var req models.AttendanceGPSRequest
+	if err := c.Bind(&req); err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	if err := c.Validate(req); err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	userID := c.Get("user_id").(float64)
+	branchID := c.Get("branch_id").(float64)
+	req.BranchID = uint(branchID)
+
+	result, err := h.service.CheckInGPS(c.Request().Context(), uint(userID), req)
+	if err != nil {
+		return response.HandleError(c, err)
+	}
+
+	return response.Success(c, result)
+}
+
+// @Summary Check Out GPS
+// @Description Check out with GPS and image
+// @Tags Attendance
+// @Accept json
+// @Produce json
+// @Param request body models.AttendanceGPSRequest true "Attendance GPS request data"
+// @Success 201 {object} response.Response{data=models.Attendance} "Check out successfully"
+// @Failure 400 {object} response.Response "Invalid input"
+// @Failure 500 {object} response.Response "Internal server error"
+// @Router /v1/attendance/check-out-gps [post]
+func (h *AttendanceHandler) CheckOutGPS(c echo.Context) error {
+	var req models.AttendanceGPSRequest
+	if err := c.Bind(&req); err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	if err := c.Validate(req); err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	userID := c.Get("user_id").(float64)
+	branchID := c.Get("branch_id").(float64)
+	req.BranchID = uint(branchID)
+
+	result, err := h.service.CheckOutGPS(c.Request().Context(), uint(userID), req)
+	if err != nil {
+		return response.HandleError(c, err)
+	}
+
+	return response.Created(c, result)
+}

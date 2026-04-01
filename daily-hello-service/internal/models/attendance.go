@@ -31,6 +31,8 @@ type Attendance struct {
 	CheckOutDeviceID  string           `json:"check_out_device_id" gorm:"column:check_out_device_id;type:varchar(100)"`
 	CheckInStatus     AttendanceStatus `json:"check_in_status" gorm:"column:check_in_status;type:varchar(20)"`
 	CheckOutStatus    AttendanceStatus `json:"check_out_status" gorm:"column:check_out_status;type:varchar(20)"`
+	CheckInImage      string           `json:"check_in_image" gorm:"type:text"`
+	CheckOutImage     string           `json:"check_out_image" gorm:"type:text"`
 	CreatedAt         time.Time        `json:"created_at"`
 }
 
@@ -41,6 +43,14 @@ type AttendanceRequest struct {
 	WifiSSID  string  `json:"wifi_ssid"`
 	DeviceID  string  `json:"device_id" validate:"required"`
 	BranchID  uint    `json:"branch_id"`
+}
+
+type AttendanceGPSRequest struct {
+	Lat      float64 `json:"lat" validate:"required"`
+	Lng      float64 `json:"lng" validate:"required"`
+	DeviceID string  `json:"device_id" validate:"required"`
+	BranchID uint    `json:"branch_id"`
+	Image    string  `json:"image" validate:"required"` // base64 string
 }
 
 type AttendanceFilter struct {
