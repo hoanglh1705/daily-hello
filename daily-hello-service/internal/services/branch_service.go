@@ -86,8 +86,17 @@ func (s *BranchService) Delete(ctx context.Context, id uint) error {
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *BranchService) List(ctx context.Context, pq models.PaginationQuery) (*models.PaginatedResponse, error) {
-	items, total, err := s.repo.List(ctx, pq)
+func (s *BranchService) List(ctx context.Context, pq models.PaginationQuery, branchIDs []uint) (*models.PaginatedResponse, error) {
+	var (
+		items []models.Branch
+		total int64
+		err   error
+	)
+	if len(branchIDs) > 0 {
+		items, total, err = s.repo.ListByIDs(ctx, branchIDs, pq)
+	} else {
+		items, total, err = s.repo.List(ctx, pq)
+	}
 	if err != nil {
 		return nil, appErrors.ErrInternal
 	}

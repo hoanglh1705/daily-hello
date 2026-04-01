@@ -13,10 +13,11 @@ import (
 
 type UserHandler struct {
 	service *services.UserService
+	rbac    *services.RBACService
 }
 
-func NewUserHandler(service *services.UserService) *UserHandler {
-	return &UserHandler{service: service}
+func NewUserHandler(service *services.UserService, rbac *services.RBACService) *UserHandler {
+	return &UserHandler{service: service, rbac: rbac}
 }
 
 // @Summary Register
@@ -30,12 +31,26 @@ func NewUserHandler(service *services.UserService) *UserHandler {
 // @Failure 500 {object} response.Response "Internal server error"
 // @Router /v1/users [post]
 func (h *UserHandler) Register(c echo.Context) error {
+	role, _ := c.Get("role").(string)
+	if role != string(models.RoleAdmin) && role != string(models.RoleManager) {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
+	currentBranchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
 	var req models.CreateUserRequest
 	if err := c.Bind(&req); err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
 	}
 	if err := c.Validate(req); err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	if req.BranchID != nil {
+		if err := h.rbac.EnsureBranchAccess(c.Request().Context(), role, currentBranchID, *req.BranchID); err != nil {
+			return response.Error(c, appErrors.ErrForbidden)
+		}
 	}
 
 	result, err := h.service.Create(c.Request().Context(), req)
@@ -57,9 +72,23 @@ func (h *UserHandler) Register(c echo.Context) error {
 // @Failure 404 {object} response.Response "Not found"
 // @Router /v1/users/{id} [get]
 func (h *UserHandler) GetByID(c echo.Context) error {
+	role, _ := c.Get("role").(string)
+	currentUserID := uint(c.Get("user_id").(float64))
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	currentBranchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	if models.Role(role) == models.RoleEmployee && uint(id) != currentUserID {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
+	if models.Role(role) == models.RoleManager {
+		if err := h.rbac.EnsureUserAccess(c.Request().Context(), role, currentBranchID, uint(id)); err != nil {
+			return response.Error(c, appErrors.ErrForbidden)
+		}
 	}
 
 	result, err := h.service.GetByID(c.Request().Context(), uint(id))
@@ -102,14 +131,33 @@ func (h *UserHandler) GetMe(c echo.Context) error {
 // @Failure 404 {object} response.Response "Not found"
 // @Router /v1/users/{id} [put]
 func (h *UserHandler) Update(c echo.Context) error {
+	role, _ := c.Get("role").(string)
+	currentUserID := uint(c.Get("user_id").(float64))
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	currentBranchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	if models.Role(role) == models.RoleEmployee && uint(id) != currentUserID {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
+	if models.Role(role) == models.RoleManager {
+		if err := h.rbac.EnsureUserAccess(c.Request().Context(), role, currentBranchID, uint(id)); err != nil {
+			return response.Error(c, appErrors.ErrForbidden)
+		}
 	}
 
 	var req models.UpdateUserRequest
 	if err := c.Bind(&req); err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	if req.BranchID != nil {
+		if err := h.rbac.EnsureBranchAccess(c.Request().Context(), role, currentBranchID, *req.BranchID); err != nil {
+			return response.Error(c, appErrors.ErrForbidden)
+		}
 	}
 
 	result, err := h.service.Update(c.Request().Context(), uint(id), req)
@@ -142,14 +190,23 @@ func (h *UserHandler) List(c echo.Context) error {
 	}
 
 	if role == string(models.RoleManager) {
-		branchID, err := getContextUint(c, "branch_id")
+		currentBranchID, err := getContextUint(c, "branch_id")
 		if err != nil {
 			return response.Error(c, appErrors.ErrInvalidInput)
 		}
-		if branchID == nil {
+		if currentBranchID == nil {
 			return response.Error(c, appErrors.ErrForbidden)
 		}
-		q.BranchID = branchID
+		if q.BranchID != nil {
+			if err := h.rbac.EnsureBranchAccess(c.Request().Context(), role, currentBranchID, *q.BranchID); err != nil {
+				return response.Error(c, appErrors.ErrForbidden)
+			}
+		} else {
+			q.BranchIDs, err = h.rbac.GetAllowedBranchIDs(c.Request().Context(), role, currentBranchID)
+			if err != nil {
+				return response.HandleError(c, err)
+			}
+		}
 	}
 
 	result, err := h.service.List(c.Request().Context(), q)

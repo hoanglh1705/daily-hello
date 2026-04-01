@@ -21,6 +21,8 @@ dependencies:
   intl: ^0.19.0
   crypto: ^3.0.6
   sensors_plus: ^6.1.1
+  image_picker: ^1.2.1
+  image: ^4.8.0
 
 dev_dependencies:
   flutter_test:

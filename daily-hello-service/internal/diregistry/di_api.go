@@ -28,7 +28,8 @@ func initApiBuilder() {
 				Scope: di.App,
 				Build: func(ctn di.Container) (any, error) {
 					svc := ctn.Get(UserServiceDIName).(*services.UserService)
-					return handlers.NewUserHandler(svc), nil
+					rbac := ctn.Get(RBACServiceDIName).(*services.RBACService)
+					return handlers.NewUserHandler(svc, rbac), nil
 				},
 				Close: func(obj any) error {
 					return nil
@@ -39,7 +40,8 @@ func initApiBuilder() {
 				Scope: di.App,
 				Build: func(ctn di.Container) (any, error) {
 					cuc := ctn.Get(BranchServiceDIName).(*services.BranchService)
-					return handlers.NewBranchHandler(cuc), nil
+					rbac := ctn.Get(RBACServiceDIName).(*services.RBACService)
+					return handlers.NewBranchHandler(cuc, rbac), nil
 				},
 				Close: func(obj any) error {
 					return nil
@@ -61,7 +63,8 @@ func initApiBuilder() {
 				Scope: di.App,
 				Build: func(ctn di.Container) (any, error) {
 					svc := ctn.Get(AttendanceServiceDIName).(*services.AttendanceService)
-					return handlers.NewAttendanceHandler(svc), nil
+					rbac := ctn.Get(RBACServiceDIName).(*services.RBACService)
+					return handlers.NewAttendanceHandler(svc, rbac), nil
 				},
 				Close: func(obj any) error {
 					return nil
@@ -72,7 +75,8 @@ func initApiBuilder() {
 				Scope: di.App,
 				Build: func(ctn di.Container) (any, error) {
 					svc := ctn.Get(DeviceServiceDIName).(*services.DeviceService)
-					return handlers.NewDeviceHandler(svc), nil
+					rbac := ctn.Get(RBACServiceDIName).(*services.RBACService)
+					return handlers.NewDeviceHandler(svc, rbac), nil
 				},
 				Close: func(obj any) error {
 					return nil
@@ -83,7 +87,8 @@ func initApiBuilder() {
 				Scope: di.App,
 				Build: func(ctn di.Container) (any, error) {
 					svc := ctn.Get(DashboardServiceDIName).(*services.DashboardService)
-					return handlers.NewDashboardHandler(svc), nil
+					rbac := ctn.Get(RBACServiceDIName).(*services.RBACService)
+					return handlers.NewDashboardHandler(svc, rbac), nil
 				},
 				Close: func(obj any) error {
 					return nil

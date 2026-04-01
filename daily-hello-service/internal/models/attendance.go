@@ -54,9 +54,10 @@ type AttendanceGPSRequest struct {
 }
 
 type AttendanceFilter struct {
-	UserID   uint   `query:"user_id"`
-	BranchID uint   `query:"branch_id"`
-	DateFrom string `query:"date_from"`
-	DateTo   string `query:"date_to"`
-	Status   string `query:"status"`
+	UserID    uint   `query:"user_id"`
+	BranchID  uint   `query:"branch_id"`
+	BranchIDs []uint `json:"-"`
+	DateFrom  string `query:"date_from"`
+	DateTo    string `query:"date_to"`
+	Status    string `query:"status"`
 }

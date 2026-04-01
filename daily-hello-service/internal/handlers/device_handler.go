@@ -13,10 +13,11 @@ import (
 
 type DeviceHandler struct {
 	service *services.DeviceService
+	rbac    *services.RBACService
 }
 
-func NewDeviceHandler(service *services.DeviceService) *DeviceHandler {
-	return &DeviceHandler{service: service}
+func NewDeviceHandler(service *services.DeviceService, rbac *services.RBACService) *DeviceHandler {
+	return &DeviceHandler{service: service, rbac: rbac}
 }
 
 // @Summary Register Device
@@ -113,6 +114,10 @@ func (h *DeviceHandler) AdminList(c echo.Context) error {
 	if role != "admin" && role != "manager" {
 		return response.Error(c, appErrors.ErrForbidden)
 	}
+	currentBranchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
 
 	var q models.DeviceListQuery
 	if err := c.Bind(&q); err != nil {
@@ -124,7 +129,21 @@ func (h *DeviceHandler) AdminList(c echo.Context) error {
 		return response.Error(c, appErrors.ErrInvalidInput)
 	}
 
-	result, err := h.service.ListByStatus(c.Request().Context(), q.Status, q.BranchID, pq)
+	var branchIDs []uint
+	if role == string(models.RoleManager) {
+		if q.BranchID != nil {
+			if err := h.rbac.EnsureBranchAccess(c.Request().Context(), role, currentBranchID, *q.BranchID); err != nil {
+				return response.Error(c, appErrors.ErrForbidden)
+			}
+		} else {
+			branchIDs, err = h.rbac.GetAllowedBranchIDs(c.Request().Context(), role, currentBranchID)
+			if err != nil {
+				return response.HandleError(c, err)
+			}
+		}
+	}
+
+	result, err := h.service.ListByStatus(c.Request().Context(), q.Status, q.BranchID, branchIDs, pq)
 	if err != nil {
 		return response.HandleError(c, err)
 	}
@@ -146,12 +165,21 @@ func (h *DeviceHandler) Approve(c echo.Context) error {
 	if role != "admin" && role != "manager" {
 		return response.Error(c, appErrors.ErrForbidden)
 	}
+	currentBranchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
 
 	adminID := uint(c.Get("user_id").(float64))
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	if role == string(models.RoleManager) {
+		if err := h.rbac.EnsureDeviceAccess(c.Request().Context(), role, currentBranchID, uint(id)); err != nil {
+			return response.Error(c, appErrors.ErrForbidden)
+		}
 	}
 
 	result, err := h.service.Approve(c.Request().Context(), adminID, uint(id))
@@ -176,12 +204,21 @@ func (h *DeviceHandler) Reject(c echo.Context) error {
 	if role != "admin" && role != "manager" {
 		return response.Error(c, appErrors.ErrForbidden)
 	}
+	currentBranchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
 
 	adminID := uint(c.Get("user_id").(float64))
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	if role == string(models.RoleManager) {
+		if err := h.rbac.EnsureDeviceAccess(c.Request().Context(), role, currentBranchID, uint(id)); err != nil {
+			return response.Error(c, appErrors.ErrForbidden)
+		}
 	}
 
 	result, err := h.service.Reject(c.Request().Context(), adminID, uint(id))

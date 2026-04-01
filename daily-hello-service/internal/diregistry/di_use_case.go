@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go-libs/dihelper"
+	"go-libs/redisclienthelper"
 
 	"github.com/sarulabs/di"
 )
@@ -82,6 +83,21 @@ func initUseCasesBuilder() {
 						return nil, err
 					}
 					return services.NewAttendanceService(attendanceRepo, branchRepo, locationService, location), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
+			di.Def{
+				Name:  RBACServiceDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					branchRepo := ctn.Get(BranchRepositoryDIName).(repositories.BranchRepository)
+					userRepo := ctn.Get(UserRepositoryDIName).(*repositories.UserRepository)
+					deviceRepo := ctn.Get(DeviceRepositoryDIName).(*repositories.DeviceRepository)
+					attendanceRepo := ctn.Get(AttendanceRepositoryDIName).(*repositories.AttendanceRepository)
+					redisHelper := ctn.Get(RedisClientHelperDIName).(*redisclienthelper.RedisClientHelper)
+					return services.NewRBACService(branchRepo, userRepo, deviceRepo, attendanceRepo, redisHelper), nil
 				},
 				Close: func(obj any) error {
 					return nil

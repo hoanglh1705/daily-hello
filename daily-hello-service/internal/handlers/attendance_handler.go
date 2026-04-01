@@ -13,10 +13,11 @@ import (
 
 type AttendanceHandler struct {
 	service *services.AttendanceService
+	rbac    *services.RBACService
 }
 
-func NewAttendanceHandler(service *services.AttendanceService) *AttendanceHandler {
-	return &AttendanceHandler{service: service}
+func NewAttendanceHandler(service *services.AttendanceService, rbac *services.RBACService) *AttendanceHandler {
+	return &AttendanceHandler{service: service, rbac: rbac}
 }
 
 // @Summary Check In
@@ -124,6 +125,10 @@ func (h *AttendanceHandler) GetMyHistory(c echo.Context) error {
 // @Failure 500 {object} response.Response "Internal server error"
 // @Router /v1/attendance/history [get]
 func (h *AttendanceHandler) GetHistory(c echo.Context) error {
+	role, _ := c.Get("role").(string)
+	if role != string(models.RoleAdmin) && role != string(models.RoleManager) {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
 	var pq models.PaginationQuery
 	if err := c.Bind(&pq); err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
@@ -132,6 +137,22 @@ func (h *AttendanceHandler) GetHistory(c echo.Context) error {
 	var filter models.AttendanceFilter
 	if err := c.Bind(&filter); err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	currentBranchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	if role == string(models.RoleManager) {
+		if filter.BranchID > 0 {
+			if err := h.rbac.EnsureBranchAccess(c.Request().Context(), role, currentBranchID, filter.BranchID); err != nil {
+				return response.Error(c, appErrors.ErrForbidden)
+			}
+		} else {
+			filter.BranchIDs, err = h.rbac.GetAllowedBranchIDs(c.Request().Context(), role, currentBranchID)
+			if err != nil {
+				return response.HandleError(c, err)
+			}
+		}
 	}
 
 	result, err := h.service.GetHistory(c.Request().Context(), filter, pq)
@@ -197,10 +218,20 @@ func (h *AttendanceHandler) ApproveCheckIn(c echo.Context) error {
 	if role != "admin" && role != "manager" {
 		return response.Error(c, appErrors.ErrForbidden)
 	}
+	currentBranchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	if role == string(models.RoleManager) {
+		if err := h.rbac.EnsureAttendanceAccess(c.Request().Context(), role, currentBranchID, uint(id)); err != nil {
+			return response.Error(c, appErrors.ErrForbidden)
+		}
 	}
 
 	result, err := h.service.ApproveCheckIn(c.Request().Context(), uint(id))
@@ -226,10 +257,20 @@ func (h *AttendanceHandler) RejectCheckIn(c echo.Context) error {
 	if role != "admin" && role != "manager" {
 		return response.Error(c, appErrors.ErrForbidden)
 	}
+	currentBranchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	if role == string(models.RoleManager) {
+		if err := h.rbac.EnsureAttendanceAccess(c.Request().Context(), role, currentBranchID, uint(id)); err != nil {
+			return response.Error(c, appErrors.ErrForbidden)
+		}
 	}
 
 	result, err := h.service.RejectCheckIn(c.Request().Context(), uint(id))
@@ -255,10 +296,20 @@ func (h *AttendanceHandler) ApproveCheckOut(c echo.Context) error {
 	if role != "admin" && role != "manager" {
 		return response.Error(c, appErrors.ErrForbidden)
 	}
+	currentBranchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	if role == string(models.RoleManager) {
+		if err := h.rbac.EnsureAttendanceAccess(c.Request().Context(), role, currentBranchID, uint(id)); err != nil {
+			return response.Error(c, appErrors.ErrForbidden)
+		}
 	}
 
 	result, err := h.service.ApproveCheckOut(c.Request().Context(), uint(id))
@@ -284,10 +335,20 @@ func (h *AttendanceHandler) RejectCheckOut(c echo.Context) error {
 	if role != "admin" && role != "manager" {
 		return response.Error(c, appErrors.ErrForbidden)
 	}
+	currentBranchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+
+	if role == string(models.RoleManager) {
+		if err := h.rbac.EnsureAttendanceAccess(c.Request().Context(), role, currentBranchID, uint(id)); err != nil {
+			return response.Error(c, appErrors.ErrForbidden)
+		}
 	}
 
 	result, err := h.service.RejectCheckOut(c.Request().Context(), uint(id))

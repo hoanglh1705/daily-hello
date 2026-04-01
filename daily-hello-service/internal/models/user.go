@@ -45,8 +45,9 @@ type UpdateUserRequest struct {
 
 type UserListQuery struct {
 	PaginationQuery
-	BranchID *uint  `query:"branch_id"`
-	Keyword  string `query:"keyword"`
+	BranchID  *uint  `query:"branch_id"`
+	BranchIDs []uint `json:"-"`
+	Keyword   string `query:"keyword"`
 }
 
 type LoginRequest struct {

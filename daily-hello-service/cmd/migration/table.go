@@ -316,5 +316,35 @@ func migrateTable() []*gormigrate.Migration {
 		},
 	})
 
+	migrations = append(migrations, &gormigrate.Migration{
+		ID: "202604011430",
+		Migrate: func(tx *gorm.DB) error {
+			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS check_in_image TEXT`).Error; err != nil {
+				return err
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			if err := tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS check_in_image`).Error; err != nil {
+				return err
+			}
+			return nil
+		},
+	}, &gormigrate.Migration{
+		ID: "202604011431",
+		Migrate: func(tx *gorm.DB) error {
+			if err := tx.Exec(`ALTER TABLE attendances ADD COLUMN IF NOT EXISTS check_out_image TEXT`).Error; err != nil {
+				return err
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			if err := tx.Exec(`ALTER TABLE attendances DROP COLUMN IF EXISTS check_out_image`).Error; err != nil {
+				return err
+			}
+			return nil
+		},
+	})
+
 	return migrations
 }

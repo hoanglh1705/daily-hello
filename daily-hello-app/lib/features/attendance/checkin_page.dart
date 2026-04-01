@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'attendance_controller.dart';
 import '../auth/auth_controller.dart';
@@ -30,8 +32,9 @@ class _CheckInPageState extends State<CheckInPage> {
     String message, {
     required Future<void> Function() onRetry,
   }) async {
-    final isPermissionDeniedForever =
-        message.toLowerCase().contains('vinh vien');
+    final isPermissionDeniedForever = message.toLowerCase().contains(
+      'vinh vien',
+    );
     final isGpsDisabled = message.toLowerCase().contains('gps');
 
     await showModalBottomSheet<void>(
@@ -64,10 +67,7 @@ class _CheckInPageState extends State<CheckInPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  message,
-                  style: theme.textTheme.bodyMedium,
-                ),
+                Text(message, style: theme.textTheme.bodyMedium),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
@@ -75,13 +75,13 @@ class _CheckInPageState extends State<CheckInPage> {
                     label: isPermissionDeniedForever
                         ? 'Mo cai dat'
                         : isGpsDisabled
-                            ? 'Mo GPS'
-                            : 'Thu lai',
+                        ? 'Mo GPS'
+                        : 'Thu lai',
                     icon: isPermissionDeniedForever
                         ? Icons.settings_outlined
                         : isGpsDisabled
-                            ? Icons.my_location
-                            : Icons.refresh,
+                        ? Icons.my_location
+                        : Icons.refresh,
                     onPressed: () async {
                       Navigator.pop(sheetContext);
                       if (isPermissionDeniedForever) {
@@ -141,16 +141,10 @@ class _CheckInPageState extends State<CheckInPage> {
 
     final message = controller.errorMessage ?? 'Check-in that bai.';
     if (_isLocationError(message)) {
-      await _showLocationErrorSheet(
-        message,
-        onRetry: _handleCheckIn,
-      );
+      await _showLocationErrorSheet(message, onRetry: _handleCheckIn);
       return;
     }
-    _showActionErrorSnackBar(
-      message: message,
-      onRetry: _handleCheckIn,
-    );
+    _showActionErrorSnackBar(message: message, onRetry: _handleCheckIn);
   }
 
   Future<void> _handleCheckOut() async {
@@ -170,16 +164,80 @@ class _CheckInPageState extends State<CheckInPage> {
 
     final message = controller.errorMessage ?? 'Check-out that bai.';
     if (_isLocationError(message)) {
-      await _showLocationErrorSheet(
-        message,
-        onRetry: _handleCheckOut,
+      await _showLocationErrorSheet(message, onRetry: _handleCheckOut);
+      return;
+    }
+    _showActionErrorSnackBar(message: message, onRetry: _handleCheckOut);
+  }
+
+  Future<void> _handleCheckInGps() async {
+    final controller = context.read<AttendanceController>();
+
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 800,
+      imageQuality: 75,
+    );
+    if (file == null) return;
+
+    final bytes = await file.readAsBytes();
+    final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+
+    final ok = await controller.checkInGps(base64Image);
+    if (!mounted) return;
+
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Check-in GPS chờ duyệt!'),
+          backgroundColor: Colors.green,
+        ),
       );
       return;
     }
-    _showActionErrorSnackBar(
-      message: message,
-      onRetry: _handleCheckOut,
+
+    final message = controller.errorMessage ?? 'Check-in GPS thất bại.';
+    if (_isLocationError(message)) {
+      await _showLocationErrorSheet(message, onRetry: _handleCheckInGps);
+      return;
+    }
+    _showActionErrorSnackBar(message: message, onRetry: _handleCheckInGps);
+  }
+
+  Future<void> _handleCheckOutGps() async {
+    final controller = context.read<AttendanceController>();
+
+    final picker = ImagePicker();
+    final file = await picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 800,
+      imageQuality: 75,
     );
+    if (file == null) return;
+
+    final bytes = await file.readAsBytes();
+    final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+
+    final ok = await controller.checkOutGps(base64Image);
+    if (!mounted) return;
+
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Check-out GPS chờ duyệt!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final message = controller.errorMessage ?? 'Check-out GPS thất bại.';
+    if (_isLocationError(message)) {
+      await _showLocationErrorSheet(message, onRetry: _handleCheckOutGps);
+      return;
+    }
+    _showActionErrorSnackBar(message: message, onRetry: _handleCheckOutGps);
   }
 
   List<Widget> _buildGroupedHistory(
@@ -239,14 +297,16 @@ class _CheckInPageState extends State<CheckInPage> {
                   ),
                 ];
                 if (item.checkOut != null) {
-                  rows.add(_CompactActivityRow(
-                    icon: Icons.logout,
-                    iconColor: Colors.green,
-                    label: 'Check-out',
-                    time: DateFormatUtils.formatTime(item.checkOut!),
-                    status: 'HOÀN THÀNH',
-                    statusColor: Colors.green[600]!,
-                  ));
+                  rows.add(
+                    _CompactActivityRow(
+                      icon: Icons.logout,
+                      iconColor: Colors.green,
+                      label: 'Check-out',
+                      time: DateFormatUtils.formatTime(item.checkOut!),
+                      status: 'HOÀN THÀNH',
+                      statusColor: Colors.green[600]!,
+                    ),
+                  );
                 }
                 return rows;
               }),
@@ -307,10 +367,7 @@ class _CheckInPageState extends State<CheckInPage> {
     final primaryColor = theme.colorScheme.primary;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chấm công'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Chấm công'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -328,12 +385,13 @@ class _CheckInPageState extends State<CheckInPage> {
                     offset: const Offset(0, 4),
                   ),
                 ],
-                border: Border.all(
-                  color: primaryColor.withAlpha(30),
-                ),
+                border: Border.all(color: primaryColor.withAlpha(30)),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 28,
+                ),
                 child: Column(
                   children: [
                     // Date
@@ -356,7 +414,9 @@ class _CheckInPageState extends State<CheckInPage> {
                         controller.wifiSsid!.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
                           borderRadius: BorderRadius.circular(20),
@@ -364,8 +424,7 @@ class _CheckInPageState extends State<CheckInPage> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.wifi,
-                                size: 16, color: primaryColor),
+                            Icon(Icons.wifi, size: 16, color: primaryColor),
                             const SizedBox(width: 6),
                             Text(
                               controller.wifiSsid!,
@@ -416,8 +475,11 @@ class _CheckInPageState extends State<CheckInPage> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.gps_off,
-                                size: 18, color: Colors.red[700]),
+                            Icon(
+                              Icons.gps_off,
+                              size: 18,
+                              color: Colors.red[700],
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -449,8 +511,11 @@ class _CheckInPageState extends State<CheckInPage> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.wifi_off,
-                                size: 18, color: Colors.red[600]),
+                            Icon(
+                              Icons.wifi_off,
+                              size: 18,
+                              color: Colors.red[600],
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -462,10 +527,12 @@ class _CheckInPageState extends State<CheckInPage> {
                               ),
                             ),
                             GestureDetector(
-                              onTap: () =>
-                                  controller.refreshWifiValidation(),
-                              child: Icon(Icons.refresh,
-                                  size: 18, color: Colors.red[400]),
+                              onTap: () => controller.refreshWifiValidation(),
+                              child: Icon(
+                                Icons.refresh,
+                                size: 18,
+                                color: Colors.red[400],
+                              ),
                             ),
                           ],
                         ),
@@ -480,11 +547,13 @@ class _CheckInPageState extends State<CheckInPage> {
                           child: _ActionButton(
                             label: 'Check-in',
                             icon: Icons.login,
-                            isActive: !controller.isWifiChecked ||
+                            isActive:
+                                !controller.isWifiChecked ||
                                 controller.isWifiValid,
                             isLoading: controller.isLoading && today == null,
                             primaryColor: primaryColor,
-                            onPressed: (!controller.isWifiChecked ||
+                            onPressed:
+                                (!controller.isWifiChecked ||
                                         controller.isWifiValid) &&
                                     !controller.isLoading
                                 ? _handleCheckIn
@@ -496,17 +565,49 @@ class _CheckInPageState extends State<CheckInPage> {
                           child: _ActionButton(
                             label: 'Check-out',
                             icon: Icons.logout,
-                            isActive: today != null &&
+                            isActive:
+                                today != null &&
                                 (!controller.isWifiChecked ||
                                     controller.isWifiValid),
-                            isLoading:
-                                controller.isLoading && today != null,
+                            isLoading: controller.isLoading && today != null,
                             primaryColor: primaryColor,
-                            onPressed: today != null &&
+                            onPressed:
+                                today != null &&
                                     (!controller.isWifiChecked ||
                                         controller.isWifiValid) &&
                                     !controller.isLoading
                                 ? _handleCheckOut
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ActionButton(
+                            label: 'GPS In',
+                            icon: Icons.camera_alt,
+                            isActive: true,
+                            isLoading: controller.isLoading,
+                            primaryColor: Colors.blue,
+                            onPressed: !controller.isLoading
+                                ? _handleCheckInGps
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _ActionButton(
+                            label: 'GPS Out',
+                            icon: Icons.camera_enhance,
+                            isActive:
+                                true, // as backend allows checkout without checkin now
+                            isLoading: controller.isLoading,
+                            primaryColor: Colors.blue,
+                            onPressed: !controller.isLoading
+                                ? _handleCheckOutGps
                                 : null,
                           ),
                         ),
@@ -549,8 +650,7 @@ class _CheckInPageState extends State<CheckInPage> {
             const SizedBox(height: 16),
 
             // Recent activity list (grouped by date)
-            if (controller.history.isEmpty &&
-                !controller.isLoadingHistory)
+            if (controller.history.isEmpty && !controller.isLoadingHistory)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Text(
@@ -696,18 +796,13 @@ class _ActionButton extends StatelessWidget {
         foregroundColor: color,
         side: BorderSide(color: color),
         padding: const EdgeInsets.symmetric(vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
       child: isLoading
           ? SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: color,
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2, color: color),
             )
           : Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -780,18 +875,12 @@ class _CompactActivityRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ),
           Text(
             time,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 15,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
           ),
           const SizedBox(width: 10),
           SizedBox(

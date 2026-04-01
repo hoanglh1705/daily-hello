@@ -48,6 +48,7 @@ const (
 	AttendanceServiceDIName string = "AttendanceService"
 	DeviceServiceDIName     string = "DeviceService"
 	DashboardServiceDIName  string = "DashboardService"
+	RBACServiceDIName       string = "RBACService"
 
 	// * Api
 	AuthAPIDIName       string = "AuthAPI"

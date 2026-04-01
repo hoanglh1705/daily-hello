@@ -52,7 +52,7 @@ export default function BranchPage() {
     fetchData()
   }
 
-  const handleSubmit = async (formData: { name: string; address: string }) => {
+  const handleSubmit = async (formData: { name: string; address: string; lat: number; lng: number; radius: number }) => {
     if (editing) {
       await updateBranch(editing.id, formData)
     } else {

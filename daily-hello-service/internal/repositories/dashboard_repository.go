@@ -8,14 +8,14 @@ import (
 )
 
 type DashboardRepository interface {
-	GetTotalEmployee(role models.Role, currentBranchID *uint, branchID *int64) (int, error)
-	GetOnTimeCount(branchID *int64, startOfDay time.Time, endOfDay time.Time) (int, error)
-	GetLateCount(branchID *int64, startOfDay time.Time, endOfDay time.Time) (int, error)
-	GetTotalCheckIn(branchID *int64, startOfDay time.Time, endOfDay time.Time) (int, error)
-	GetAttendanceTrends(branchID *int64, fromDate time.Time, toDate time.Time) ([]models.AttendanceTrend, error)
-	GetPendingDeviceApproval() (int, error)
-	GetActiveBranches() (int, error)
-	GetRecentActivities(branchID *int64, startOfDay time.Time, endOfDay time.Time, limit int) ([]models.RecentActivityItem, error)
+	GetTotalEmployee(branchIDs []uint, branchID *int64) (int, error)
+	GetOnTimeCount(branchIDs []uint, branchID *int64, startOfDay time.Time, endOfDay time.Time) (int, error)
+	GetLateCount(branchIDs []uint, branchID *int64, startOfDay time.Time, endOfDay time.Time) (int, error)
+	GetTotalCheckIn(branchIDs []uint, branchID *int64, startOfDay time.Time, endOfDay time.Time) (int, error)
+	GetAttendanceTrends(branchIDs []uint, branchID *int64, fromDate time.Time, toDate time.Time) ([]models.AttendanceTrend, error)
+	GetPendingDeviceApproval(branchIDs []uint) (int, error)
+	GetActiveBranches(branchIDs []uint) (int, error)
+	GetRecentActivities(branchIDs []uint, branchID *int64, startOfDay time.Time, endOfDay time.Time, limit int) ([]models.RecentActivityItem, error)
 }
 
 type dashboardRepository struct {
@@ -26,102 +26,83 @@ func NewDashboardRepository(db *gorm.DB) DashboardRepository {
 	return &dashboardRepository{db: db}
 }
 
-func (r *dashboardRepository) GetTotalEmployee(role models.Role, currentBranchID *uint, branchID *int64) (int, error) {
+func applyBranchScope(query *gorm.DB, column string, branchIDs []uint, branchID *int64) *gorm.DB {
+	if branchID != nil && *branchID > 0 {
+		return query.Where(column+" = ?", *branchID)
+	}
+	if len(branchIDs) > 0 {
+		return query.Where(column+" IN ?", branchIDs)
+	}
+	return query
+}
+
+func (r *dashboardRepository) GetTotalEmployee(branchIDs []uint, branchID *int64) (int, error) {
 	var count int64
 	query := r.db.Model(&models.User{}).Where("role <> ?", models.RoleAdmin)
-
-	switch role {
-	case models.RoleAdmin:
-		if branchID != nil && *branchID > 0 {
-			query = query.Where("branch_id = ?", *branchID)
-		}
-	case models.RoleManager:
-		if currentBranchID == nil || *currentBranchID == 0 {
-			return 0, nil
-		}
-
-		accessibleBranches := r.db.Model(&models.Branch{}).
-			Select("id").
-			Where("id = ?", *currentBranchID).
-			Or("parent_branch_code = (?)",
-				r.db.Model(&models.Branch{}).
-					Select("branch_code").
-					Where("id = ? AND status = ?", *currentBranchID, "active"),
-			)
-
-		query = query.Where("branch_id IN (?)", accessibleBranches)
-		if branchID != nil && *branchID > 0 {
-			query = query.Where("branch_id = ?", *branchID)
-		}
-	default:
-		if currentBranchID == nil || *currentBranchID == 0 {
-			return 0, nil
-		}
-		query = query.Where("branch_id = ?", *currentBranchID)
-	}
+	query = applyBranchScope(query, "branch_id", branchIDs, branchID)
 
 	err := query.Count(&count).Error
 	return int(count), err
 }
 
-func (r *dashboardRepository) GetOnTimeCount(branchID *int64, start time.Time, end time.Time) (int, error) {
+func (r *dashboardRepository) GetOnTimeCount(branchIDs []uint, branchID *int64, start time.Time, end time.Time) (int, error) {
 	var count int64
 	query := r.db.Model(&models.Attendance{}).Where("check_in_time BETWEEN ? AND ?", start, end).Where("check_in_status = ?", "on_time")
-	if branchID != nil && *branchID > 0 {
-		query = query.Where("branch_id = ?", *branchID)
-	}
+	query = applyBranchScope(query, "branch_id", branchIDs, branchID)
 	err := query.Count(&count).Error
 	return int(count), err
 }
 
-func (r *dashboardRepository) GetLateCount(branchID *int64, start time.Time, end time.Time) (int, error) {
+func (r *dashboardRepository) GetLateCount(branchIDs []uint, branchID *int64, start time.Time, end time.Time) (int, error) {
 	var count int64
 	query := r.db.Model(&models.Attendance{}).Where("check_in_time BETWEEN ? AND ?", start, end).Where("check_in_status = ?", "late")
-	if branchID != nil && *branchID > 0 {
-		query = query.Where("branch_id = ?", *branchID)
-	}
+	query = applyBranchScope(query, "branch_id", branchIDs, branchID)
 	err := query.Count(&count).Error
 	return int(count), err
 }
 
-func (r *dashboardRepository) GetTotalCheckIn(branchID *int64, start time.Time, end time.Time) (int, error) {
+func (r *dashboardRepository) GetTotalCheckIn(branchIDs []uint, branchID *int64, start time.Time, end time.Time) (int, error) {
 	var count int64
 	query := r.db.Model(&models.Attendance{}).Where("check_in_time BETWEEN ? AND ?", start, end)
-	if branchID != nil && *branchID > 0 {
-		query = query.Where("branch_id = ?", *branchID)
-	}
+	query = applyBranchScope(query, "branch_id", branchIDs, branchID)
 	err := query.Count(&count).Error
 	return int(count), err
 }
 
-func (r *dashboardRepository) GetAttendanceTrends(branchID *int64, fromDate time.Time, toDate time.Time) ([]models.AttendanceTrend, error) {
+func (r *dashboardRepository) GetAttendanceTrends(branchIDs []uint, branchID *int64, fromDate time.Time, toDate time.Time) ([]models.AttendanceTrend, error) {
 	var results []models.AttendanceTrend
 
 	query := r.db.Table("attendances").
 		Select("TO_CHAR(DATE(check_in_time), 'YYYY-MM-DD') as date, TRIM(TO_CHAR(DATE(check_in_time), 'Dy')) as day, count(id) as present_count").
 		Where("check_in_time BETWEEN ? AND ?", fromDate, toDate)
 
-	if branchID != nil && *branchID > 0 {
-		query = query.Where("branch_id = ?", *branchID)
-	}
+	query = applyBranchScope(query, "branch_id", branchIDs, branchID)
 
 	err := query.Group("DATE(check_in_time)").Order("DATE(check_in_time) ASC").Scan(&results).Error
 	return results, err
 }
 
-func (r *dashboardRepository) GetPendingDeviceApproval() (int, error) {
+func (r *dashboardRepository) GetPendingDeviceApproval(branchIDs []uint) (int, error) {
 	var count int64
-	err := r.db.Model(&models.Device{}).Where("status = ?", "pending").Count(&count).Error
+	query := r.db.Model(&models.Device{}).Where("status = ?", "pending")
+	if len(branchIDs) > 0 {
+		query = query.Joins("JOIN users ON users.id = devices.user_id").Where("users.branch_id IN ?", branchIDs)
+	}
+	err := query.Count(&count).Error
 	return int(count), err
 }
 
-func (r *dashboardRepository) GetActiveBranches() (int, error) {
+func (r *dashboardRepository) GetActiveBranches(branchIDs []uint) (int, error) {
 	var count int64
-	err := r.db.Model(&models.Branch{}).Count(&count).Error
+	query := r.db.Model(&models.Branch{})
+	if len(branchIDs) > 0 {
+		query = query.Where("id IN ?", branchIDs)
+	}
+	err := query.Count(&count).Error
 	return int(count), err
 }
 
-func (r *dashboardRepository) GetRecentActivities(branchID *int64, start time.Time, end time.Time, limit int) ([]models.RecentActivityItem, error) {
+func (r *dashboardRepository) GetRecentActivities(branchIDs []uint, branchID *int64, start time.Time, end time.Time, limit int) ([]models.RecentActivityItem, error) {
 	var results []models.RecentActivityItem
 
 	query := r.db.Table("attendances").
@@ -138,9 +119,7 @@ func (r *dashboardRepository) GetRecentActivities(branchID *int64, start time.Ti
 		Joins("JOIN users ON users.id = attendances.user_id").
 		Where("check_in_time BETWEEN ? AND ?", start, end)
 
-	if branchID != nil && *branchID > 0 {
-		query = query.Where("attendances.branch_id = ?", *branchID)
-	}
+	query = applyBranchScope(query, "attendances.branch_id", branchIDs, branchID)
 
 	err := query.Order("timestamp DESC").Limit(limit).Scan(&results).Error
 	return results, err

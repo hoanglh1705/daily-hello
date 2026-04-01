@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"daily-hello-service/internal/models"
+	appErrors "daily-hello-service/internal/pkg/errors"
 	"daily-hello-service/internal/pkg/response"
 	"daily-hello-service/internal/services"
 	"strconv"
@@ -11,10 +13,11 @@ import (
 
 type DashboardHandler struct {
 	service *services.DashboardService
+	rbac    *services.RBACService
 }
 
-func NewDashboardHandler(service *services.DashboardService) *DashboardHandler {
-	return &DashboardHandler{service: service}
+func NewDashboardHandler(service *services.DashboardService, rbac *services.RBACService) *DashboardHandler {
+	return &DashboardHandler{service: service, rbac: rbac}
 }
 
 // @Summary Dashboard Overview
@@ -28,6 +31,9 @@ func NewDashboardHandler(service *services.DashboardService) *DashboardHandler {
 // @Router /v1/admin/dashboard/overview [get]
 func (h *DashboardHandler) GetOverview(c echo.Context) error {
 	role, _ := c.Get("role").(string)
+	if role != string(models.RoleAdmin) && role != string(models.RoleManager) {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
 	currentBranchID, _ := getContextUint(c, "branch_id")
 
 	var branchID *int64
@@ -46,7 +52,23 @@ func (h *DashboardHandler) GetOverview(c echo.Context) error {
 		}
 	}
 
-	result, err := h.service.GetOverview(role, currentBranchID, branchID, reqDate)
+	var branchIDs []uint
+	if role == string(models.RoleManager) {
+		if branchID != nil && *branchID > 0 {
+			targetBranchID := uint(*branchID)
+			if err := h.rbac.EnsureBranchAccess(c.Request().Context(), role, currentBranchID, targetBranchID); err != nil {
+				return response.Error(c, appErrors.ErrForbidden)
+			}
+		} else {
+			var err error
+			branchIDs, err = h.rbac.GetAllowedBranchIDs(c.Request().Context(), role, currentBranchID)
+			if err != nil {
+				return response.HandleError(c, err)
+			}
+		}
+	}
+
+	result, err := h.service.GetOverview(branchIDs, branchID, reqDate)
 	if err != nil {
 		return response.HandleError(c, err)
 	}
@@ -64,6 +86,11 @@ func (h *DashboardHandler) GetOverview(c echo.Context) error {
 // @Success 200 {object} response.Response{data=models.DashboardRecentActivityResponse} "Recent Activities"
 // @Router /v1/admin/dashboard/recent-activities [get]
 func (h *DashboardHandler) GetRecentActivities(c echo.Context) error {
+	role, _ := c.Get("role").(string)
+	if role != string(models.RoleAdmin) && role != string(models.RoleManager) {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
+	currentBranchID, _ := getContextUint(c, "branch_id")
 	var branchID *int64
 	if bID := c.QueryParam("branch_id"); bID != "" && bID != "0" {
 		id, err := strconv.ParseInt(bID, 10, 64)
@@ -81,7 +108,23 @@ func (h *DashboardHandler) GetRecentActivities(c echo.Context) error {
 
 	reqDate := time.Now() // Fetch for today context
 
-	result, err := h.service.GetRecentActivities(branchID, reqDate, limit)
+	var branchIDs []uint
+	if role == string(models.RoleManager) {
+		if branchID != nil && *branchID > 0 {
+			targetBranchID := uint(*branchID)
+			if err := h.rbac.EnsureBranchAccess(c.Request().Context(), role, currentBranchID, targetBranchID); err != nil {
+				return response.Error(c, appErrors.ErrForbidden)
+			}
+		} else {
+			var err error
+			branchIDs, err = h.rbac.GetAllowedBranchIDs(c.Request().Context(), role, currentBranchID)
+			if err != nil {
+				return response.HandleError(c, err)
+			}
+		}
+	}
+
+	result, err := h.service.GetRecentActivities(branchIDs, branchID, reqDate, limit)
 	if err != nil {
 		return response.HandleError(c, err)
 	}

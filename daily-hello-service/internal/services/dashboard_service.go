@@ -15,21 +15,21 @@ func NewDashboardService(repo repositories.DashboardRepository) *DashboardServic
 	return &DashboardService{repo: repo}
 }
 
-func (s *DashboardService) GetOverview(role string, currentBranchID *uint, branchID *int64, date time.Time) (*models.DashboardOverviewResponse, error) {
+func (s *DashboardService) GetOverview(branchIDs []uint, branchID *int64, date time.Time) (*models.DashboardOverviewResponse, error) {
 	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
 	endOfDay := startOfDay.Add(24*time.Hour - time.Nanosecond)
 
 	prevStartOfDay := startOfDay.AddDate(0, 0, -1)
 	prevEndOfDay := endOfDay.AddDate(0, 0, -1)
 
-	totalEmployee, _ := s.repo.GetTotalEmployee(models.Role(role), currentBranchID, branchID)
-	onTimeCount, _ := s.repo.GetOnTimeCount(branchID, startOfDay, endOfDay)
-	lateCount, _ := s.repo.GetLateCount(branchID, startOfDay, endOfDay)
-	totalCheckIn, _ := s.repo.GetTotalCheckIn(branchID, startOfDay, endOfDay)
+	totalEmployee, _ := s.repo.GetTotalEmployee(branchIDs, branchID)
+	onTimeCount, _ := s.repo.GetOnTimeCount(branchIDs, branchID, startOfDay, endOfDay)
+	lateCount, _ := s.repo.GetLateCount(branchIDs, branchID, startOfDay, endOfDay)
+	totalCheckIn, _ := s.repo.GetTotalCheckIn(branchIDs, branchID, startOfDay, endOfDay)
 
-	prevOnTimeCount, _ := s.repo.GetOnTimeCount(branchID, prevStartOfDay, prevEndOfDay)
-	prevLateCount, _ := s.repo.GetLateCount(branchID, prevStartOfDay, prevEndOfDay)
-	prevTotalCheckIn, _ := s.repo.GetTotalCheckIn(branchID, prevStartOfDay, prevEndOfDay)
+	prevOnTimeCount, _ := s.repo.GetOnTimeCount(branchIDs, branchID, prevStartOfDay, prevEndOfDay)
+	prevLateCount, _ := s.repo.GetLateCount(branchIDs, branchID, prevStartOfDay, prevEndOfDay)
+	prevTotalCheckIn, _ := s.repo.GetTotalCheckIn(branchIDs, branchID, prevStartOfDay, prevEndOfDay)
 
 	var onTimePercentage, prevOnTimePercentage float64
 	if totalCheckIn > 0 {
@@ -43,14 +43,14 @@ func (s *DashboardService) GetOverview(role string, currentBranchID *uint, branc
 	lateTrend := float64(lateCount - prevLateCount)
 
 	sevenDaysAgo := startOfDay.AddDate(0, 0, -6)
-	trends, err := s.repo.GetAttendanceTrends(branchID, sevenDaysAgo, endOfDay)
+	trends, err := s.repo.GetAttendanceTrends(branchIDs, branchID, sevenDaysAgo, endOfDay)
 	if err != nil {
 		log.Printf("Error getting trends: %v", err)
 		trends = []models.AttendanceTrend{}
 	}
 
-	pendingApproval, _ := s.repo.GetPendingDeviceApproval()
-	activeBranches, _ := s.repo.GetActiveBranches()
+	pendingApproval, _ := s.repo.GetPendingDeviceApproval(branchIDs)
+	activeBranches, _ := s.repo.GetActiveBranches(branchIDs)
 
 	onTimeP := &onTimePercentage
 	lateC := &lateCount
@@ -76,14 +76,14 @@ func (s *DashboardService) GetOverview(role string, currentBranchID *uint, branc
 	}, nil
 }
 
-func (s *DashboardService) GetRecentActivities(branchID *int64, date time.Time, limit int) (*models.DashboardRecentActivityResponse, error) {
+func (s *DashboardService) GetRecentActivities(branchIDs []uint, branchID *int64, date time.Time, limit int) (*models.DashboardRecentActivityResponse, error) {
 	if limit <= 0 {
 		limit = 10
 	}
 	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
 	endOfDay := startOfDay.Add(24*time.Hour - time.Nanosecond)
 
-	items, err := s.repo.GetRecentActivities(branchID, startOfDay, endOfDay, limit)
+	items, err := s.repo.GetRecentActivities(branchIDs, branchID, startOfDay, endOfDay, limit)
 	if err != nil {
 		return nil, err
 	}

@@ -76,6 +76,8 @@ func (r *AttendanceRepository) List(ctx context.Context, filter models.Attendanc
 	}
 	if filter.BranchID > 0 {
 		query = query.Where("branch_id = ?", filter.BranchID)
+	} else if len(filter.BranchIDs) > 0 {
+		query = query.Where("branch_id IN ?", filter.BranchIDs)
 	}
 	if filter.DateFrom != "" {
 		query = query.Where("created_at >= ?", filter.DateFrom)

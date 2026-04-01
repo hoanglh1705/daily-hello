@@ -63,6 +63,8 @@ func (r *UserRepository) List(ctx context.Context, q models.UserListQuery) ([]mo
 
 	if q.BranchID != nil {
 		query = query.Where("branch_id = ?", *q.BranchID)
+	} else if len(q.BranchIDs) > 0 {
+		query = query.Where("branch_id IN ?", q.BranchIDs)
 	}
 
 	if keyword := strings.TrimSpace(q.Keyword); keyword != "" {

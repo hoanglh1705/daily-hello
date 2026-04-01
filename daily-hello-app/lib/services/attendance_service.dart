@@ -47,6 +47,48 @@ class AttendanceService {
     return Attendance.fromJson(unwrapApiData(res.data) as Map<String, dynamic>);
   }
 
+  Future<Attendance> checkInGps({
+    required double lat,
+    required double lng,
+    required String imageBase64,
+  }) async {
+    final deviceId = await _getDeviceId();
+    final body = jsonEncode({
+      'lat': lat,
+      'lng': lng,
+      'device_id': deviceId,
+      'image': imageBase64,
+    });
+    final hmacHeaders = HmacSigner.sign(body);
+    final res = await dio.post(
+      '/v1/attendance/check-in-gps',
+      data: body,
+      options: Options(headers: hmacHeaders),
+    );
+    return Attendance.fromJson(unwrapApiData(res.data) as Map<String, dynamic>);
+  }
+
+  Future<Attendance> checkOutGps({
+    required double lat,
+    required double lng,
+    required String imageBase64,
+  }) async {
+    final deviceId = await _getDeviceId();
+    final body = jsonEncode({
+      'lat': lat,
+      'lng': lng,
+      'device_id': deviceId,
+      'image': imageBase64,
+    });
+    final hmacHeaders = HmacSigner.sign(body);
+    final res = await dio.post(
+      '/v1/attendance/check-out-gps',
+      data: body,
+      options: Options(headers: hmacHeaders),
+    );
+    return Attendance.fromJson(unwrapApiData(res.data) as Map<String, dynamic>);
+  }
+
   Future<Map<String, dynamic>> _buildPayload({
     required double lat,
     required double lng,

@@ -137,6 +137,7 @@ CREATE TABLE attendance (
 
     check_in_status VARCHAR(20), -- waiting_approve, approved, rejected
     check_out_status VARCHAR(20), -- waiting_approve, approved, rejected
+    check_in_image TEXT,
 
     created_at TIMESTAMP DEFAULT NOW()
 );

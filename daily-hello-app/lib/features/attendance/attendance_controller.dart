@@ -204,6 +204,70 @@ class AttendanceController extends ChangeNotifier {
     }
   }
 
+  Future<bool> checkInGps(String imageBase64) async {
+    isLoading = true;
+    errorMessage = null;
+    fraudWarning = null;
+    notifyListeners();
+
+    try {
+      final position = await _getPosition();
+
+      final fraudResult = await GpsFraudDetector.detect(position);
+      if (fraudResult.isFraudulent) {
+        fraudWarning = fraudResult.reason;
+        errorMessage = 'Phát hiện gian lận. ${fraudResult.reason}';
+        return false;
+      }
+
+      todayAttendance = await _service.checkInGps(
+        lat: position.latitude,
+        lng: position.longitude,
+        imageBase64: imageBase64,
+      );
+      return true;
+    } catch (error) {
+      errorMessage =
+          getApiErrorMessage(error) ?? 'Check-in GPS thất bại: ${_formatError(error)}';
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> checkOutGps(String imageBase64) async {
+    isLoading = true;
+    errorMessage = null;
+    fraudWarning = null;
+    notifyListeners();
+
+    try {
+      final position = await _getPosition();
+
+      final fraudResult = await GpsFraudDetector.detect(position);
+      if (fraudResult.isFraudulent) {
+        fraudWarning = fraudResult.reason;
+        errorMessage = 'Phát hiện gian lận. ${fraudResult.reason}';
+        return false;
+      }
+
+      todayAttendance = await _service.checkOutGps(
+        lat: position.latitude,
+        lng: position.longitude,
+        imageBase64: imageBase64,
+      );
+      return true;
+    } catch (error) {
+      errorMessage = getApiErrorMessage(error) ??
+          'Check-out GPS thất bại: ${_formatError(error)}';
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> loadHistory({bool refresh = false}) async {
     if (refresh) {
       currentPage = 1;
