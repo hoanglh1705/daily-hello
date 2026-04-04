@@ -117,7 +117,11 @@ class _MainShellState extends State<MainShell> {
 
   void _showStatusSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 4)),
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 1),
+        showCloseIcon: true,
+      ),
     );
   }
 

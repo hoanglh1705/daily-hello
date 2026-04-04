@@ -263,8 +263,6 @@ func (s *AttendanceService) CheckIn(ctx context.Context, req models.CheckInReque
         return nil, errors.ErrInvalidLocation
     }
 
-    // TODO: check already check-in
-
     att := &models.Attendance{
         UserID:  1,
         Lat:     req.Lat,

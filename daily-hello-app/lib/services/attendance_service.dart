@@ -44,6 +44,15 @@ class AttendanceService {
       data: body,
       options: Options(headers: hmacHeaders),
     );
+    if (res.data == null || (res.data is String && (res.data as String).trim().isEmpty)) {
+      final attendance = await getTodayAttendance();
+      if (attendance != null) return attendance;
+      throw DioException(
+        requestOptions: res.requestOptions,
+        response: res,
+        error: 'Check-out thành công nhưng không lấy được dữ liệu chấm công.',
+      );
+    }
     return Attendance.fromJson(unwrapApiData(res.data) as Map<String, dynamic>);
   }
 
@@ -65,6 +74,15 @@ class AttendanceService {
       data: body,
       options: Options(headers: hmacHeaders),
     );
+    if (res.data == null || (res.data is String && (res.data as String).trim().isEmpty)) {
+      final attendance = await getTodayAttendance();
+      if (attendance != null) return attendance;
+      throw DioException(
+        requestOptions: res.requestOptions,
+        response: res,
+        error: 'Check-out thành công nhưng không lấy được dữ liệu chấm công.',
+      );
+    }
     return Attendance.fromJson(unwrapApiData(res.data) as Map<String, dynamic>);
   }
 

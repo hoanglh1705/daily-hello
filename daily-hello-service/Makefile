@@ -1,4 +1,4 @@
-SERVICE_NAME ?= ams
+SERVICE_NAME ?= dhs
 
 start:
 	go run cmd/server/main.go
@@ -10,9 +10,6 @@ install-deps:
 mod:
 	go mod tidy
 	go mod vendor
-
-specs: ## Generate swagger specs
-	HOST=$(HOST) sh scripts/specs-gen.sh
 
 gen-doc:
 	tbls doc --force
@@ -45,22 +42,12 @@ test-coverage-windows:
 	go test ./... -count=1 -cover -json -coverprofile="./test_summary/cover.out" | $$(go env GOPATH)/bin/tparse -all
 	go tool cover -html="./test_summary/cover.out" -o "./test_summary/cover.html"
 
-#-- Helm --
-uat.ams.helm-install:
-	helm install ams-api-uat ./helm -f ./helm/ams/uat/values.yaml
-
-uat.consumer.helm-install:
-	helm install ams-consumer-uat ./helm -f ./helm/ams-consumer/uat/values.yaml
-
-uat.ams.helm-upgrade:
-	@sh ./deploy-helm-manual.sh ams-api ams uat
-
-uat.consumer.helm-upgrade:
-	@sh ./deploy-helm-manual.sh ams-consumer ams-consumer uat
-
 clean: ## Clean up the built & test files
 	rm -rf ./bootstrap functions/trigger/s3/bootstrap
 	rm -rf functions/tfdeployment/dev/*.zip functions/tfdeployment/uat/*.zip functions/tfdeployment/prod/*.zip
+
+build-image:
+	docker build -t $(SERVICE_NAME) .
 
 govulncheck:
 	govulncheck ./...

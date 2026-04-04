@@ -259,7 +259,7 @@ func migrateData(_ *config.Config) []*gormigrate.Migration {
 					checkInStatus := "approved"
 					checkOutStatus := "approved"
 					if isLate {
-						checkInStatus = "late"
+						checkInStatus = "waiting_approve"
 					}
 
 					records = append(records, Attendance{
@@ -290,6 +290,62 @@ func migrateData(_ *config.Config) []*gormigrate.Migration {
 		},
 		Rollback: func(tx *gorm.DB) error {
 			return tx.Exec(`DELETE FROM attendances WHERE check_in_device_id LIKE 'SEED-ATT-%'`).Error
+		},
+	})
+
+	migrations = append(migrations, &gormigrate.Migration{
+		ID: "202604021433",
+		Migrate: func(tx *gorm.DB) error {
+			type User struct {
+				ID        uint      `gorm:"column:id;primaryKey;autoIncrement"`
+				Name      string    `gorm:"column:name"`
+				Code      string    `gorm:"column:code"`
+				Email     string    `gorm:"column:email"`
+				Phone     string    `gorm:"column:phone"`
+				Password  string    `gorm:"column:password"`
+				Role      string    `gorm:"column:role"`
+				BranchID  *uint     `gorm:"column:branch_id"`
+				Status    string    `gorm:"column:status"`
+				CreatedAt time.Time `gorm:"column:created_at"`
+				UpdatedAt time.Time `gorm:"column:updated_at"`
+			}
+
+			var existed int64
+			if err := tx.Table("users").
+				Where("email LIKE ?", "seed.admin.%@dailyhello.local").
+				Count(&existed).Error; err != nil {
+				return err
+			}
+			if existed > 0 {
+				return nil
+			}
+
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+			if err != nil {
+				return err
+			}
+
+			now := time.Now()
+			admins := make([]User, 0, 10)
+			for i := 1; i <= 10; i++ {
+				admins = append(admins, User{
+					Name:      fmt.Sprintf("Seed Admin %02d", i),
+					Code:      fmt.Sprintf("SEED-ADMIN-%02d", i),
+					Email:     fmt.Sprintf("seed.admin.%02d@dailyhello.local", i),
+					Phone:     fmt.Sprintf("091%07d", i),
+					Password:  string(hashedPassword),
+					Role:      "admin",
+					BranchID:  nil,
+					Status:    "active",
+					CreatedAt: now,
+					UpdatedAt: now,
+				})
+			}
+
+			return tx.Table("users").CreateInBatches(admins, 10).Error
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return tx.Exec(`DELETE FROM users WHERE email LIKE 'seed.admin.%@dailyhello.local'`).Error
 		},
 	})
 

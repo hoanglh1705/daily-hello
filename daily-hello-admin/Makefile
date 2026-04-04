@@ -1,5 +1,7 @@
 .PHONY: dev start build lint preview install
 
+SERVICE_NAME ?= dha
+
 # Bắt đầu server development
 dev:
 	npm run dev
@@ -22,3 +24,6 @@ preview:
 # Cài đặt các thư viện (dependencies)
 install:
 	npm install
+
+build-image:
+	docker build -t $(SERVICE_NAME) .

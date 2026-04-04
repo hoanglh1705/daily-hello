@@ -20,7 +20,7 @@ class BranchService {
   }
 
   Future<List<BranchWifi>> getBranchWifiList(String branchId) async {
-    final res = await dio.get('/v1/auth/branch-wifi/branch/$branchId');
+    final res = await dio.get('/v1/branch-wifi/branch/$branchId');
     final data = unwrapApiData(res.data);
     if (data is List) {
       return data

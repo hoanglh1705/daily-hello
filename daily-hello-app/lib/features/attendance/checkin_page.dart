@@ -113,6 +113,8 @@ class _CheckInPageState extends State<CheckInPage> {
       ..showSnackBar(
         SnackBar(
           content: Text(message),
+          duration: const Duration(seconds: 1),
+          showCloseIcon: true,
           behavior: SnackBarBehavior.floating,
           action: SnackBarAction(
             label: 'Thu lai',
@@ -134,6 +136,8 @@ class _CheckInPageState extends State<CheckInPage> {
         const SnackBar(
           content: Text('Check-in thanh cong!'),
           backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+          showCloseIcon: true,
         ),
       );
       return;
@@ -157,6 +161,8 @@ class _CheckInPageState extends State<CheckInPage> {
         const SnackBar(
           content: Text('Check-out thanh cong!'),
           backgroundColor: Colors.orange,
+          duration: Duration(seconds: 1),
+          showCloseIcon: true,
         ),
       );
       return;
@@ -192,6 +198,8 @@ class _CheckInPageState extends State<CheckInPage> {
         const SnackBar(
           content: Text('Check-in GPS chờ duyệt!'),
           backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+          showCloseIcon: true,
         ),
       );
       return;
@@ -227,6 +235,8 @@ class _CheckInPageState extends State<CheckInPage> {
         const SnackBar(
           content: Text('Check-out GPS chờ duyệt!'),
           backgroundColor: Colors.orange,
+          duration: Duration(seconds: 1),
+          showCloseIcon: true,
         ),
       );
       return;

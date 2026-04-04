@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: dh_postgres
+    environment:
+      POSTGRES_USER: ams
+      POSTGRES_PASSWORD: ams123
+      POSTGRES_DB: dhdb
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "5462:5432"
+    volumes:
+      - dh_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ams -d dhdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: dh_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - dh_redisdata:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./daily-hello-service
+      dockerfile: Dockerfile
+    container_name: dh_api
+    environment:
+      ENV: local
+      DATABASE__HOST: db
+      DATABASE__PORT: 5432
+      DATABASE__USERNAME: ams
+      DATABASE__PASSWORD: ams123
+      DATABASE__DATABASE: dhdb
+      REDIS_CACHE__HOST: redis
+      REDIS_CACHE__PORT: 6379
+      HTTP_ADDRESS: 8282
+    ports:
+      - "8282:8282"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  admin:
+    build:
+      context: ./daily-hello-admin
+      dockerfile: Dockerfile
+    container_name: dh_admin
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8282 # Set this based on your React project conventions
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  dh_pgdata:
+  dh_redisdata:
