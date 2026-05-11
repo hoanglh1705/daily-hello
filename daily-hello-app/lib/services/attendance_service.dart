@@ -161,6 +161,28 @@ class AttendanceService {
     );
   }
 
+  /// Load all attendance records for a specific month
+  Future<List<Attendance>> getHistoryByMonth({
+    required int year,
+    required int month,
+  }) async {
+    final from = DateTime(year, month, 1);
+    final to = DateTime(year, month + 1, 0); // last day of month
+
+    final fromStr = '${from.year}-${from.month.toString().padLeft(2, '0')}-${from.day.toString().padLeft(2, '0')}';
+    final toStr = '${to.year}-${to.month.toString().padLeft(2, '0')}-${to.day.toString().padLeft(2, '0')}';
+
+    final res = await dio.get('/v1/attendance/my-history', queryParameters: {
+      'date_from': fromStr,
+      'date_to': toStr,
+      'page': 1,
+      'limit': 100,
+    });
+    final data = unwrapApiData(res.data) as Map<String, dynamic>;
+    final list = data['items'] as List<dynamic>? ?? [];
+    return list.map((e) => Attendance.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   Future<Attendance?> getTodayAttendance() async {
     try {
       final res = await dio.get('/v1/attendance/today');

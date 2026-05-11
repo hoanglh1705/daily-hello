@@ -39,11 +39,22 @@ func (h *AttendanceHandler) CheckIn(c echo.Context) error {
 		return response.Error(c, appErrors.ErrInvalidInput)
 	}
 
-	userID := c.Get("user_id").(float64)
-	branchID := c.Get("branch_id").(float64)
-	req.BranchID = uint(branchID)
+	userID, err := getContextUint(c, "user_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
 
-	result, err := h.service.CheckIn(c.Request().Context(), uint(userID), req)
+	branchID, err := getContextUint(c, "branch_id")
+	if err != nil {
+		return response.Error(c, appErrors.ErrInvalidInput)
+	}
+	if userID == nil || branchID == nil {
+		return response.Error(c, appErrors.ErrForbidden)
+	}
+
+	req.BranchID = *branchID
+
+	result, err := h.service.CheckIn(c.Request().Context(), *userID, req)
 	if err != nil {
 		return response.HandleError(c, err)
 	}

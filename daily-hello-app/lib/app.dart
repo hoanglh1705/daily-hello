@@ -83,7 +83,6 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
-  bool _deviceChecked = false;
 
   static const _pages = [
     CheckInPage(),
@@ -93,73 +92,10 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkDevice());
-  }
-
-  Future<void> _checkDevice() async {
-    if (_deviceChecked) return;
-    _deviceChecked = true;
-
-    final controller = context.read<DeviceController>();
-    final device = await controller.checkDevice();
-
-    if (!mounted) return;
-
-    if (device == null && controller.error == null) {
-      // Device not registered — ask user
-      _showRegisterDialog();
-    } else if (device != null && device.isPending) {
-      _showStatusSnackBar('Thiết bị đang chờ admin phê duyệt.');
-    } else if (device != null && device.isRejected) {
-      _showStatusSnackBar('Thiết bị đã bị từ chối. Vui lòng liên hệ admin.');
-    }
-  }
-
-  void _showStatusSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 1),
-        showCloseIcon: true,
-      ),
-    );
-  }
-
-  Future<void> _showRegisterDialog() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Đăng ký thiết bị'),
-        content: const Text(
-          'Thiết bị này chưa được đăng ký.\nBạn có muốn đăng ký thiết bị để sử dụng chấm công không?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Để sau'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Đăng ký'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      final controller = context.read<DeviceController>();
-      final device = await controller.registerDevice();
-      if (!mounted) return;
-
-      if (device != null) {
-        _showStatusSnackBar(
-          'Đăng ký thành công! Thiết bị đang chờ admin phê duyệt.',
-        );
-      } else {
-        _showStatusSnackBar(controller.error ?? 'Đăng ký thất bại.');
-      }
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Just check device status — UI handling is done in CheckInPage
+      context.read<DeviceController>().checkDevice();
+    });
   }
 
   @override

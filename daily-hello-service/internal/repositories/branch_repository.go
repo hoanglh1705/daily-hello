@@ -76,6 +76,9 @@ func (r *branchRepository) list(ctx context.Context, branchIDs []uint, pq models
 	if len(branchIDs) > 0 {
 		query = query.Where("id IN ?", branchIDs)
 	}
+	if pq.Search != "" {
+		query = query.Where("name LIKE ?", "%"+pq.Search+"%")
+	}
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err

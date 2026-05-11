@@ -346,5 +346,32 @@ func migrateTable() []*gormigrate.Migration {
 		},
 	})
 
+	// Create holidays table
+	migrations = append(migrations, &gormigrate.Migration{
+		ID: "202605110900",
+		Migrate: func(tx *gorm.DB) error {
+			type Holiday struct {
+				ID          uint      `gorm:"column:id;primaryKey;autoIncrement"`
+				Name        string    `gorm:"column:name;type:varchar(200);not null"`
+				Date        time.Time `gorm:"column:date;type:date;not null;index"`
+				Description string    `gorm:"column:description;type:text"`
+				CreatedBy   uint      `gorm:"column:created_by;index"`
+				CreatedAt   time.Time `gorm:"column:created_at"`
+				UpdatedAt   time.Time `gorm:"column:updated_at"`
+			}
+
+			if err := tx.Set("gorm:table_options", defaultTableOpts).AutoMigrate(&Holiday{}); err != nil {
+				return err
+			}
+
+			tx.Exec(`ALTER TABLE holidays ADD CONSTRAINT fk_holidays_created_by FOREIGN KEY (created_by) REFERENCES users(id)`)
+
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return tx.Migrator().DropTable("holidays")
+		},
+	})
+
 	return migrations
 }

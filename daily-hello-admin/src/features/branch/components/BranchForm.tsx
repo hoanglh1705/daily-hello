@@ -12,7 +12,7 @@ export default function BranchForm({ initial, onSubmit, onCancel }: Props) {
   const [address, setAddress] = useState('')
   const [latLng, setLatLng] = useState('')
   const [latLngError, setLatLngError] = useState('')
-  const [radius, setRadius] = useState('0')
+  const [radius, setRadius] = useState('100')
 
   useEffect(() => {
     if (initial) {
@@ -24,7 +24,7 @@ export default function BranchForm({ initial, onSubmit, onCancel }: Props) {
       setName('')
       setAddress('')
       setLatLng('')
-      setRadius('0')
+      setRadius('100')
     }
   }, [initial])
 
@@ -51,11 +51,11 @@ export default function BranchForm({ initial, onSubmit, onCancel }: Props) {
   return (
     <form onSubmit={handleSubmit}>
       <div>
-        <label>Ten chi nhanh</label>
+        <label>Tên chi nhánh</label>
         <input value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div>
-        <label>Dia chi</label>
+        <label>Địa chỉ</label>
         <input value={address} onChange={(e) => setAddress(e.target.value)} required />
       </div>
       <div>
@@ -69,13 +69,13 @@ export default function BranchForm({ initial, onSubmit, onCancel }: Props) {
         {latLngError && <span style={{ color: 'red', fontSize: '0.85em' }}>{latLngError}</span>}
       </div>
       <div>
-        <label>Radius(m)</label>
+        <label>Bán kính (m)</label>
         <input value={radius} onChange={(e) => setRadius(e.target.value)} required />
       </div>
       <div>
-        <button type="submit">{initial ? 'Cap nhat' : 'Tao moi'}</button>
+        <button type="submit">{initial ? 'Cập nhật' : 'Thêm mới'}</button>
         <button type="button" onClick={onCancel}>
-          Huy
+          Hủy
         </button>
       </div>
     </form>

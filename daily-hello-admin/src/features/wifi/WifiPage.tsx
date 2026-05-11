@@ -5,7 +5,7 @@ import SearchSelect from '@/shared/components/SearchSelect'
 import type { SearchSelectOption } from '@/shared/components/SearchSelect'
 import { useDebounce } from '@/shared/hooks/useDebounce'
 import { DEFAULT_PAGE, DEFAULT_LIMIT } from '@/shared/utils/constants'
-import { getWifiList, createWifi, deleteWifi } from './api'
+import { getWifiList, createWifi, updateWifi, deleteWifi } from './api'
 import { getBranches } from '@/features/branch/api'
 import type { Wifi } from './types'
 import WifiTable from './components/WifiTable'
@@ -25,6 +25,7 @@ export default function WifiPage() {
   const [branchLoading, setBranchLoading] = useState(false)
 
   const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<Wifi | null>(null)
 
   const fetchBranches = async () => {
     setBranchLoading(true)
@@ -68,14 +69,28 @@ export default function WifiPage() {
     setPage(DEFAULT_PAGE)
   }
 
+  const handleCreate = () => {
+    setEditing(null)
+    setModalOpen(true)
+  }
+
+  const handleEdit = (wifi: Wifi) => {
+    setEditing(wifi)
+    setModalOpen(true)
+  }
+
   const handleDelete = async (id: number) => {
     if (!confirm('Xác nhận xóa?')) return
     await deleteWifi(id)
     fetchData()
   }
 
-  const handleSubmit = async (formData: {name: string, code: string, ssid: string; bssid: string; branch_id: number }) => {
-    await createWifi(formData)
+  const handleSubmit = async (formData: { name: string; code: string; ssid: string; bssid: string; branch_id: number }) => {
+    if (editing) {
+      await updateWifi(editing.id, formData)
+    } else {
+      await createWifi(formData)
+    }
     setModalOpen(false)
     fetchData()
   }
@@ -84,7 +99,7 @@ export default function WifiPage() {
     <div>
       <div className="page-header">
         <h1>Quản lý WiFi</h1>
-        <button className="btn-primary" onClick={() => setModalOpen(true)}>+ Thêm WiFi</button>
+        <button className="btn-primary" onClick={handleCreate}>+ Thêm WiFi</button>
       </div>
 
       <div className="toolbar">
@@ -103,7 +118,7 @@ export default function WifiPage() {
         </div>
       </div>
 
-      <WifiTable data={data} loading={loading} onDelete={handleDelete} />
+      <WifiTable data={data} loading={loading} onEdit={handleEdit} onDelete={handleDelete} />
 
       <Pagination
         page={page}
@@ -114,10 +129,11 @@ export default function WifiPage() {
 
       <Modal
         open={modalOpen}
-        title="Thêm WiFi"
+        title={editing ? 'Cập nhật WiFi' : 'Thêm WiFi'}
         onClose={() => setModalOpen(false)}
       >
         <WifiForm
+          initial={editing}
           onSubmit={handleSubmit}
           onCancel={() => setModalOpen(false)}
         />

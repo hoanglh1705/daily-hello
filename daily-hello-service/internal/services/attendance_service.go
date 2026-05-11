@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"fmt"
+	"go-libs/loghelper"
 	"time"
 
 	"daily-hello-service/internal/models"
@@ -44,6 +46,7 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID uint, req models
 	validGPS := s.locationService.IsValidGPS(branch, req.Lat, req.Lng)
 	validWifi := s.locationService.IsValidWifi(branch, req.WifiBSSID)
 	if !validGPS && !validWifi {
+		loghelper.Logger.DebugContext(ctx, fmt.Sprintf("validGPS is %v validWifi is %v", validGPS, validWifi))
 		return nil, appErrors.ErrInvalidLocation
 	}
 
@@ -61,12 +64,8 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID uint, req models
 	now := time.Now().In(s.timezone)
 	checkInLat := req.Lat
 	checkInLng := req.Lng
-	checkInType := "gps"
-	checkInStatus := models.StatusWaitingApprove
-	if validWifi {
-		checkInType = "wifi"
-		checkInStatus = models.StatusApproved
-	}
+	checkInType := "wifi"
+	checkInStatus := models.StatusApproved
 
 	att := &models.Attendance{
 		UserID:           userID,
@@ -114,16 +113,13 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID uint, req model
 	validGPS := s.locationService.IsValidGPS(branch, req.Lat, req.Lng)
 	validWifi := s.locationService.IsValidWifi(branch, req.WifiBSSID)
 	if !validGPS && !validWifi {
+		loghelper.Logger.DebugContext(ctx, fmt.Sprintf("validGPS is %v validWifi is %v", validGPS, validWifi))
 		return nil, appErrors.ErrInvalidLocation
 	}
 
 	// 4. Update check-out on existing record
-	checkOutType := "gps"
-	checkOutStatus := models.StatusWaitingApprove
-	if validWifi {
-		checkOutType = "wifi"
-		checkOutStatus = models.StatusApproved
-	}
+	checkOutType := "wifi"
+	checkOutStatus := models.StatusApproved
 
 	now := time.Now().In(s.timezone)
 	checkOutLat := req.Lat
@@ -283,15 +279,15 @@ func (s *AttendanceService) CheckInGPS(ctx context.Context, userID uint, req mod
 	checkInLng := req.Lng
 
 	att := &models.Attendance{
-		UserID:           userID,
-		BranchID:         req.BranchID,
-		CheckInTime:      &now,
-		CheckInLat:       &checkInLat,
-		CheckInLng:       &checkInLng,
-		CheckInDeviceID:  req.DeviceID,
-		CheckInType:      "gps",
-		CheckInStatus:    models.StatusWaitingApprove,
-		CheckInImage:     resizedImage,
+		UserID:          userID,
+		BranchID:        req.BranchID,
+		CheckInTime:     &now,
+		CheckInLat:      &checkInLat,
+		CheckInLng:      &checkInLng,
+		CheckInDeviceID: req.DeviceID,
+		CheckInType:     "gps",
+		CheckInStatus:   models.StatusWaitingApprove,
+		CheckInImage:    resizedImage,
 	}
 
 	if err := s.repo.Create(ctx, att); err != nil {
@@ -350,13 +346,13 @@ func (s *AttendanceService) CheckOutGPS(ctx context.Context, userID uint, req mo
 		}
 	} else {
 		updates := map[string]interface{}{
-			"check_out_time":       now,
-			"check_out_lat":        checkOutLat,
-			"check_out_lng":        checkOutLng,
-			"check_out_device_id":  req.DeviceID,
-			"check_out_type":       "gps",
-			"check_out_status":     models.StatusWaitingApprove,
-			"check_out_image":      resizedImage,
+			"check_out_time":      now,
+			"check_out_lat":       checkOutLat,
+			"check_out_lng":       checkOutLng,
+			"check_out_device_id": req.DeviceID,
+			"check_out_type":      "gps",
+			"check_out_status":    models.StatusWaitingApprove,
+			"check_out_image":     resizedImage,
 		}
 
 		if err := s.repo.UpdateCheckOut(ctx, att.ID, updates); err != nil {

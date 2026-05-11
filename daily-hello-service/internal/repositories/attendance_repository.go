@@ -80,10 +80,10 @@ func (r *AttendanceRepository) List(ctx context.Context, filter models.Attendanc
 		query = query.Where("branch_id IN ?", filter.BranchIDs)
 	}
 	if filter.DateFrom != "" {
-		query = query.Where("created_at >= ?", filter.DateFrom)
+		query = query.Where("check_in_time >= ?", filter.DateFrom)
 	}
 	if filter.DateTo != "" {
-		query = query.Where("created_at <= ?", filter.DateTo)
+		query = query.Where("check_in_time <= ?", filter.DateTo+" 23:59:59")
 	}
 	if filter.Status != "" {
 		query = query.Where("checkin_status = ?", filter.Status)

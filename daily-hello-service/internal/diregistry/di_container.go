@@ -35,6 +35,7 @@ const (
 	AttendanceSummaryRepositoryDIName string = "AttendanceSummaryRepository"
 	DeviceRepositoryDIName            string = "DeviceRepository"
 	DashboardRepositoryDIName         string = "DashboardRepository"
+	HolidayRepositoryDIName           string = "HolidayRepository"
 
 	// * Adapter
 	JWTMiddlewareDIName string = "JWTMiddleware"
@@ -49,6 +50,7 @@ const (
 	DeviceServiceDIName     string = "DeviceService"
 	DashboardServiceDIName  string = "DashboardService"
 	RBACServiceDIName       string = "RBACService"
+	HolidayServiceDIName    string = "HolidayService"
 
 	// * Api
 	AuthAPIDIName       string = "AuthAPI"
@@ -58,6 +60,7 @@ const (
 	AttendanceAPIDIName string = "AttendanceAPI"
 	DeviceAPIDIName     string = "DeviceAPI"
 	DashboardAPIDIName  string = "DashboardAPI"
+	HolidayAPIDIName    string = "HolidayAPI"
 
 	// Public
 	PublicCompanyAPIDIName string = "PublicCompanyAPI"

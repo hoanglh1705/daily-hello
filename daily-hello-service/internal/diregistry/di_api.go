@@ -94,6 +94,17 @@ func initApiBuilder() {
 					return nil
 				},
 			},
+			di.Def{
+				Name:  HolidayAPIDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					svc := ctn.Get(HolidayServiceDIName).(*services.HolidayService)
+					return handlers.NewHolidayHandler(svc), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
 		)
 
 		return arr

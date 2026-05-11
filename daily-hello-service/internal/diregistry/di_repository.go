@@ -147,6 +147,21 @@ func initRepositoriesBuilder() {
 					return nil
 				},
 			},
+			di.Def{
+				Name:  HolidayRepositoryDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					sql := ctn.Get(DataBaseDIName).(sqlormhelper.SqlGormDatabase)
+					db, err := sql.GetConn()
+					if err != nil {
+						return nil, err
+					}
+					return repositories.NewHolidayRepository(db), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
 		)
 
 		return arr

@@ -3,11 +3,12 @@ import { clearTokens } from '@/services/tokenStorage'
 
 const navItems = [
   { to: '/', label: 'Dashboard' },
-  { to: '/users', label: 'Quan ly User' },
-  { to: '/branches', label: 'Chi nhanh' },
+  { to: '/users', label: 'Quản lý nhân viên' },
+  { to: '/branches', label: 'Chi nhánh' },
   { to: '/wifi', label: 'WiFi' },
-  { to: '/attendance', label: 'Cham cong' },
-  { to: '/devices', label: 'Thiet bi' },
+  { to: '/attendance', label: 'Chấm công' },
+  { to: '/devices', label: 'Thiết bị' },
+  { to: '/holidays', label: 'Ngày nghỉ' },
 ]
 
 export default function AdminLayout() {

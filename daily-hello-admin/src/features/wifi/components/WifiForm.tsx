@@ -1,16 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { Wifi } from '../types'
 
 type Props = {
-  onSubmit: (data: {name: string, code: string, ssid: string; bssid: string; branch_id: number }) => void
+  initial?: Wifi | null
+  onSubmit: (data: { name: string; code: string; ssid: string; bssid: string; branch_id: number }) => void
   onCancel: () => void
 }
 
-export default function WifiForm({ onSubmit, onCancel }: Props) {
+export default function WifiForm({ initial, onSubmit, onCancel }: Props) {
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
   const [ssid, setSsid] = useState('')
   const [bssid, setBssid] = useState('')
   const [branchId, setBranchId] = useState('')
+
+  useEffect(() => {
+    if (initial) {
+      setName(initial.name)
+      setCode(initial.code)
+      setSsid(initial.ssid)
+      setBssid(initial.bssid)
+      setBranchId(String(initial.branch_id))
+    } else {
+      setName('')
+      setCode('')
+      setSsid('')
+      setBssid('')
+      setBranchId('')
+    }
+  }, [initial])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,9 +63,9 @@ export default function WifiForm({ onSubmit, onCancel }: Props) {
         />
       </div>
       <div>
-        <button type="submit">Tao moi</button>
+        <button type="submit">{initial ? 'Cập nhật' : 'Thêm mới'}</button>
         <button type="button" onClick={onCancel}>
-          Huy
+          Hủy
         </button>
       </div>
     </form>

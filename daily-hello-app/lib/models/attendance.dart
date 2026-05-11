@@ -21,13 +21,29 @@ class Attendance {
     this.status = 'present',
   });
 
+  static DateTime _parseUtcToLocal(String value) {
+    final parsed = DateTime.parse(value);
+    if (parsed.isUtc) return parsed.toLocal();
+
+    return DateTime.utc(
+      parsed.year,
+      parsed.month,
+      parsed.day,
+      parsed.hour,
+      parsed.minute,
+      parsed.second,
+      parsed.millisecond,
+      parsed.microsecond,
+    ).toLocal();
+  }
+
   factory Attendance.fromJson(Map<String, dynamic> json) {
     return Attendance(
       id: json['id']?.toString() ?? '',
       userId: json['user_id']?.toString() ?? '',
-      checkIn: DateTime.parse(json['check_in_time']),
+      checkIn: _parseUtcToLocal(json['check_in_time']),
       checkOut: json['check_out_time'] != null
-          ? DateTime.parse(json['check_out_time'])
+          ? _parseUtcToLocal(json['check_out_time'])
           : null,
       lat: (json['check_in_lat'] as num?)?.toDouble(),
       lng: (json['check_in_lng'] as num?)?.toDouble(),

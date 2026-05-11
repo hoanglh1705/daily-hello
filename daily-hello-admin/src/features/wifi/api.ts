@@ -8,8 +8,12 @@ export const getWifiList = (params: { page: number; limit: number; branch_id?: n
   return axios.get<unknown, ListResponse>('/v1/branch-wifi', { params })
 }
 
-export const createWifi = (data: { ssid: string; bssid: string; branch_id: number }) => {
+export const createWifi = (data: { name: string; code: string; ssid: string; bssid: string; branch_id: number }) => {
   return axios.post('/v1/branch-wifi', data)
+}
+
+export const updateWifi = (id: number, data: { name: string; code: string; ssid: string; bssid: string; branch_id: number }) => {
+  return axios.put(`/v1/branch-wifi/${id}`, data)
 }
 
 export const deleteWifi = (id: number) => {

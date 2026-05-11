@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'attendance_controller.dart';
 import '../auth/auth_controller.dart';
+import '../device/device_controller.dart';
 import '../../widgets/app_button.dart';
 import '../../core/utils/date_format_utils.dart';
 
@@ -373,6 +374,12 @@ class _CheckInPageState extends State<CheckInPage> {
   Widget build(BuildContext context) {
     final controller = context.watch<AttendanceController>();
     final today = controller.todayAttendance;
+    final checkInTime = today != null
+        ? DateFormatUtils.formatTime(today.checkIn)
+        : '--:--';
+    final checkOutTime = today?.checkOut != null
+        ? DateFormatUtils.formatTime(today!.checkOut!)
+        : '--:--';
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
 
@@ -453,9 +460,7 @@ class _CheckInPageState extends State<CheckInPage> {
                         Expanded(
                           child: _TimeBox(
                             label: 'GIỜ CHECK-IN',
-                            time: today != null
-                                ? DateFormatUtils.formatTime(today.checkIn)
-                                : '--:--',
+                            time: checkInTime,
                             primaryColor: primaryColor,
                           ),
                         ),
@@ -463,9 +468,7 @@ class _CheckInPageState extends State<CheckInPage> {
                         Expanded(
                           child: _TimeBox(
                             label: 'GIỜ CHECK-OUT',
-                            time: today?.checkOut != null
-                                ? DateFormatUtils.formatTime(today!.checkOut!)
-                                : '--:--',
+                            time: checkOutTime,
                             primaryColor: primaryColor,
                           ),
                         ),
@@ -550,83 +553,13 @@ class _CheckInPageState extends State<CheckInPage> {
                       const SizedBox(height: 16),
                     ],
 
-                    // Action buttons (always visible)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _ActionButton(
-                            label: 'Check-in',
-                            icon: Icons.login,
-                            isActive:
-                                !controller.isWifiChecked ||
-                                controller.isWifiValid,
-                            isLoading: controller.isLoading && today == null,
-                            primaryColor: primaryColor,
-                            onPressed:
-                                (!controller.isWifiChecked ||
-                                        controller.isWifiValid) &&
-                                    !controller.isLoading
-                                ? _handleCheckIn
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _ActionButton(
-                            label: 'Check-out',
-                            icon: Icons.logout,
-                            isActive:
-                                today != null &&
-                                (!controller.isWifiChecked ||
-                                    controller.isWifiValid),
-                            isLoading: controller.isLoading && today != null,
-                            primaryColor: primaryColor,
-                            onPressed:
-                                today != null &&
-                                    (!controller.isWifiChecked ||
-                                        controller.isWifiValid) &&
-                                    !controller.isLoading
-                                ? _handleCheckOut
-                                : null,
-                          ),
-                        ),
-                      ],
+                    // Action buttons — device-status dependent
+                    ..._buildActionArea(
+                      controller: controller,
+                      today: today,
+                      primaryColor: primaryColor,
+                      theme: theme,
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _ActionButton(
-                            label: 'GPS In',
-                            icon: Icons.camera_alt,
-                            isActive: true,
-                            isLoading: controller.isLoading,
-                            primaryColor: Colors.blue,
-                            onPressed: !controller.isLoading
-                                ? _handleCheckInGps
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _ActionButton(
-                            label: 'GPS Out',
-                            icon: Icons.camera_enhance,
-                            isActive:
-                                true, // as backend allows checkout without checkin now
-                            isLoading: controller.isLoading,
-                            primaryColor: Colors.blue,
-                            onPressed: !controller.isLoading
-                                ? _handleCheckOutGps
-                                : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (today != null && today.isCheckedOut) ...[
-                      const SizedBox(height: 14),
-                      _CompletedBadge(primaryColor: primaryColor),
-                    ],
                   ],
                 ),
               ),
@@ -691,6 +624,239 @@ class _CheckInPageState extends State<CheckInPage> {
         ),
       ),
     );
+  }
+
+  /// Build action area based on device registration status
+  List<Widget> _buildActionArea({
+    required AttendanceController controller,
+    required dynamic today,
+    required Color primaryColor,
+    required ThemeData theme,
+  }) {
+    final deviceController = context.watch<DeviceController>();
+    final device = deviceController.device;
+
+    // Still checking device status
+    if (deviceController.isChecking) {
+      return [
+        const SizedBox(height: 8),
+        const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ];
+    }
+
+    // Device not registered
+    if (device == null) {
+      return [
+        _buildDeviceStatusCard(
+          icon: Icons.phone_android,
+          iconColor: Colors.orange,
+          bgColor: Colors.orange.shade50,
+          borderColor: Colors.orange.shade200,
+          message: 'Thiết bị chưa được đăng ký.\nVui lòng đăng ký để sử dụng chấm công.',
+          messageColor: Colors.orange.shade800,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: _ActionButton(
+            label: 'Đăng ký thiết bị',
+            icon: Icons.app_registration,
+            isActive: true,
+            isLoading: deviceController.isRegistering,
+            primaryColor: Colors.orange,
+            onPressed: !deviceController.isRegistering
+                ? _handleRegisterDevice
+                : null,
+          ),
+        ),
+      ];
+    }
+
+    // Device pending approval
+    if (device.isPending) {
+      return [
+        _buildDeviceStatusCard(
+          icon: Icons.hourglass_top,
+          iconColor: Colors.amber.shade700,
+          bgColor: Colors.amber.shade50,
+          borderColor: Colors.amber.shade200,
+          message: 'Thiết bị đang chờ admin phê duyệt.\nVui lòng liên hệ admin.',
+          messageColor: Colors.amber.shade900,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: _ActionButton(
+            label: 'Đang chờ phê duyệt',
+            icon: Icons.hourglass_top,
+            isActive: false,
+            isLoading: false,
+            primaryColor: Colors.grey,
+            onPressed: null,
+          ),
+        ),
+      ];
+    }
+
+    // Device rejected
+    if (device.isRejected) {
+      return [
+        _buildDeviceStatusCard(
+          icon: Icons.block,
+          iconColor: Colors.red.shade700,
+          bgColor: Colors.red.shade50,
+          borderColor: Colors.red.shade200,
+          message: 'Thiết bị đã bị từ chối.\nVui lòng liên hệ admin.',
+          messageColor: Colors.red.shade800,
+        ),
+      ];
+    }
+
+    // Device approved — show normal checkin/checkout buttons
+    return [
+      Row(
+        children: [
+          Expanded(
+            child: _ActionButton(
+              label: 'Check-in',
+              icon: Icons.login,
+              isActive:
+                  !controller.isWifiChecked ||
+                  controller.isWifiValid,
+              isLoading: controller.isLoading && today == null,
+              primaryColor: primaryColor,
+              onPressed:
+                  (!controller.isWifiChecked ||
+                          controller.isWifiValid) &&
+                      !controller.isLoading
+                  ? _handleCheckIn
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _ActionButton(
+              label: 'Check-out',
+              icon: Icons.logout,
+              isActive:
+                  today != null &&
+                  (!controller.isWifiChecked ||
+                      controller.isWifiValid),
+              isLoading: controller.isLoading && today != null,
+              primaryColor: primaryColor,
+              onPressed:
+                  today != null &&
+                      (!controller.isWifiChecked ||
+                          controller.isWifiValid) &&
+                      !controller.isLoading
+                  ? _handleCheckOut
+                  : null,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: _ActionButton(
+              label: 'GPS In',
+              icon: Icons.camera_alt,
+              isActive: today == null,
+              isLoading: controller.isLoading,
+              primaryColor: Colors.blue,
+              onPressed: today == null && !controller.isLoading
+                  ? _handleCheckInGps
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _ActionButton(
+              label: 'GPS Out',
+              icon: Icons.camera_enhance,
+              isActive: true,
+              isLoading: controller.isLoading,
+              primaryColor: Colors.blue,
+              onPressed: !controller.isLoading
+                  ? _handleCheckOutGps
+                  : null,
+            ),
+          ),
+        ],
+      ),
+      if (today != null && today.isCheckedOut) ...[
+        const SizedBox(height: 14),
+        _CompletedBadge(primaryColor: primaryColor),
+      ],
+    ];
+  }
+
+  Widget _buildDeviceStatusCard({
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    required Color borderColor,
+    required String message,
+    required Color messageColor,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: iconColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 12,
+                color: messageColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleRegisterDevice() async {
+    final deviceController = context.read<DeviceController>();
+    final device = await deviceController.registerDevice();
+    if (!mounted) return;
+
+    if (device != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đăng ký thành công! Thiết bị đang chờ phê duyệt.'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+          showCloseIcon: true,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(deviceController.error ?? 'Đăng ký thất bại.'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+          showCloseIcon: true,
+        ),
+      );
+    }
   }
 }
 

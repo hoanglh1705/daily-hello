@@ -125,6 +125,17 @@ func initUseCasesBuilder() {
 					return nil
 				},
 			},
+			di.Def{
+				Name:  HolidayServiceDIName,
+				Scope: di.App,
+				Build: func(ctn di.Container) (any, error) {
+					repo := ctn.Get(HolidayRepositoryDIName).(repositories.HolidayRepository)
+					return services.NewHolidayService(repo), nil
+				},
+				Close: func(obj any) error {
+					return nil
+				},
+			},
 		)
 
 		return arr

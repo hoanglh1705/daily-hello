@@ -57,4 +57,10 @@ class DateFormatUtils {
     final minutes = diff.inMinutes % 60;
     return '${hours}h ${minutes}m';
   }
+
+  /// e.g. "Tháng 5, 2026"
+  static String formatMonthYear(DateTime date) {
+    final month = _monthsLong[date.month - 1];
+    return '$month, ${date.year}';
+  }
 }

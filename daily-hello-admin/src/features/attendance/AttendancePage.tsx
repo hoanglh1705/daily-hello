@@ -85,7 +85,7 @@ export default function AttendancePage() {
             setPage(DEFAULT_PAGE)
           }}
         >
-          <option value="">Tat ca chi nhanh</option>
+          <option value="">Tất cả chi nhánh</option>
           {branches.map((branch) => (
             <option key={branch.id} value={branch.id}>
               {branch.name}

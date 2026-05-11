@@ -107,7 +107,7 @@ export default function AttendanceTable({
     },
     {
       key: 'branch',
-      title: 'Chi nhanh',
+      title: 'Chi nhánh',
       render: (item: Attendance) => item.branch.name,
     },
     {

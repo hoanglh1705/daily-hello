@@ -7,12 +7,15 @@ import '../../core/utils/gps_fraud_detector.dart';
 import '../../core/utils/location_permission_utils.dart';
 import '../../models/attendance.dart';
 import '../../models/branch_wifi.dart';
+import '../../models/holiday.dart';
 import '../../services/attendance_service.dart';
 import '../../services/branch_service.dart';
+import '../../services/holiday_service.dart';
 
 class AttendanceController extends ChangeNotifier {
   final AttendanceService _service;
   final BranchService _branchService;
+  final HolidayService _holidayService;
   final NetworkInfo _networkInfo = NetworkInfo();
 
   Attendance? todayAttendance;
@@ -23,6 +26,12 @@ class AttendanceController extends ChangeNotifier {
   String? fraudWarning;
   int currentPage = 1;
   bool hasMore = true;
+
+  // Calendar state
+  DateTime selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  List<Attendance> monthAttendance = [];
+  List<Holiday> monthHolidays = [];
+  bool isLoadingMonth = false;
 
   // WiFi info state
   String? wifiSsid;
@@ -39,7 +48,7 @@ class AttendanceController extends ChangeNotifier {
   bool get isWifiChecked => _wifiValidated;
   List<BranchWifi> get branchWifiList => _branchWifiList;
 
-  AttendanceController(this._service, this._branchService);
+  AttendanceController(this._service, this._branchService, this._holidayService);
 
   String _formatError(Object error) {
     return error.toString().replaceFirst('Exception: ', '');
@@ -290,6 +299,70 @@ class AttendanceController extends ChangeNotifier {
     } finally {
       isLoadingHistory = false;
       notifyListeners();
+    }
+  }
+
+  /// Load attendance and holidays for a specific month (calendar view)
+  Future<void> loadMonth({DateTime? month}) async {
+    if (month != null) {
+      selectedMonth = DateTime(month.year, month.month);
+    }
+
+    isLoadingMonth = true;
+    notifyListeners();
+
+    try {
+      final results = await Future.wait([
+        _service.getHistoryByMonth(
+          year: selectedMonth.year,
+          month: selectedMonth.month,
+        ),
+        _holidayService.getHolidaysByMonth(
+          year: selectedMonth.year,
+          month: selectedMonth.month,
+        ),
+      ]);
+
+      monthAttendance = results[0] as List<Attendance>;
+      monthHolidays = results[1] as List<Holiday>;
+    } catch (error) {
+      errorMessage = getApiErrorMessage(error) ??
+          'Lỗi tải dữ liệu tháng: ${_formatError(error)}';
+    } finally {
+      isLoadingMonth = false;
+      notifyListeners();
+    }
+  }
+
+  /// Navigate to previous month
+  void goToPreviousMonth() {
+    loadMonth(month: DateTime(selectedMonth.year, selectedMonth.month - 1));
+  }
+
+  /// Navigate to next month
+  void goToNextMonth() {
+    loadMonth(month: DateTime(selectedMonth.year, selectedMonth.month + 1));
+  }
+
+  /// Check if a date is a holiday
+  Holiday? getHolidayForDate(DateTime date) {
+    try {
+      return monthHolidays.firstWhere(
+        (h) => h.date.year == date.year && h.date.month == date.month && h.date.day == date.day,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Get attendance for a specific date
+  Attendance? getAttendanceForDate(DateTime date) {
+    try {
+      return monthAttendance.firstWhere(
+        (a) => a.checkIn.year == date.year && a.checkIn.month == date.month && a.checkIn.day == date.day,
+      );
+    } catch (_) {
+      return null;
     }
   }
 

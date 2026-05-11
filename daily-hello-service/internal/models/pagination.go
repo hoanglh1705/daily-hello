@@ -1,8 +1,9 @@
 package models
 
 type PaginationQuery struct {
-	Page  int `query:"page"`
-	Limit int `query:"limit"`
+	Page   int    `query:"page"`
+	Limit  int    `query:"limit"`
+	Search string `query:"search"`
 }
 
 func (p *PaginationQuery) GetPage() int {

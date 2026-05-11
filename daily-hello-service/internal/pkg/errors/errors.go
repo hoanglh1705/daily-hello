@@ -33,6 +33,9 @@ var (
 	// Branch
 	ErrBranchNotFound = AppError{"BRANCH_NOT_FOUND", "Branch not found"}
 
+	// Holiday
+	ErrHolidayNotFound = AppError{"HOLIDAY_NOT_FOUND", "Holiday not found"}
+
 	// Device
 	ErrDeviceNotFound = AppError{"DEVICE_NOT_FOUND", "Device not found"}
 	ErrDevicePending  = AppError{"DEVICE_PENDING", "Device registration is pending approval"}

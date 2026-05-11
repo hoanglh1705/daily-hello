@@ -12,6 +12,7 @@ import 'services/auth_service.dart';
 import 'services/attendance_service.dart';
 import 'services/branch_service.dart';
 import 'services/device_service.dart';
+import 'services/holiday_service.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -36,6 +37,7 @@ class AppProviders extends StatelessWidget {
     final attendanceService = AttendanceService(apiClient.dio);
     final branchService = BranchService(apiClient.dio);
     final deviceService = DeviceService(apiClient.dio);
+    final holidayService = HolidayService(apiClient.dio);
 
     return MultiProvider(
       providers: [
@@ -45,11 +47,12 @@ class AppProviders extends StatelessWidget {
         Provider<AttendanceService>.value(value: attendanceService),
         Provider<BranchService>.value(value: branchService),
         Provider<DeviceService>.value(value: deviceService),
+        Provider<HolidayService>.value(value: holidayService),
         ChangeNotifierProvider(
           create: (_) => AuthController(authService, secureStorage),
         ),
         ChangeNotifierProvider(
-          create: (_) => AttendanceController(attendanceService, branchService),
+          create: (_) => AttendanceController(attendanceService, branchService, holidayService),
         ),
         ChangeNotifierProvider(
           create: (_) => ProfileController(authService, secureStorage),

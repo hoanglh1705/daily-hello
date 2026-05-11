@@ -80,7 +80,7 @@ export default function DevicePage() {
             value={branchId}
             onChange={(e) => setBranchId(e.target.value ? Number(e.target.value) : '')}
           >
-            <option value="">Tat ca chi nhanh</option>
+            <option value="">Tất cả chi nhánh</option>
             {branches.map((branch) => (
               <option key={branch.id} value={branch.id}>
                 {branch.name}

@@ -118,4 +118,16 @@ func registerProtectedRoutes(g *echo.Group) {
 	adminDashboardGroup := adminGroup.Group("/dashboard")
 	adminDashboardGroup.GET("/overview", dashboardHandler.GetOverview)
 	adminDashboardGroup.GET("/recent-activities", dashboardHandler.GetRecentActivities)
+
+	// Holiday admin routes (CRUD for admin/manager)
+	holidayHandler := diregistry.GetDependency(diregistry.HolidayAPIDIName).(*handlers.HolidayHandler)
+	adminHolidayGroup := adminGroup.Group("/holidays")
+	adminHolidayGroup.POST("", holidayHandler.Create)
+	adminHolidayGroup.GET("", holidayHandler.AdminList)
+	adminHolidayGroup.PUT("/:id", holidayHandler.Update)
+	adminHolidayGroup.DELETE("/:id", holidayHandler.Delete)
+
+	// Holiday public routes (accessible by all authenticated users)
+	holidayGroup := g.Group("/holidays")
+	holidayGroup.GET("", holidayHandler.GetByMonth)
 }

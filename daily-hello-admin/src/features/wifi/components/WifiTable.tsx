@@ -4,10 +4,11 @@ import type { Wifi } from '../types'
 type Props = {
   data: Wifi[]
   loading: boolean
+  onEdit: (wifi: Wifi) => void
   onDelete: (id: number) => void
 }
 
-export default function WifiTable({ data, loading, onDelete }: Props) {
+export default function WifiTable({ data, loading, onEdit, onDelete }: Props) {
   const columns = [
     {
       key: 'name',
@@ -39,9 +40,15 @@ export default function WifiTable({ data, loading, onDelete }: Props) {
     {
       key: 'actions',
       title: 'Thao tác',
-      width: '80px',
+      width: '120px',
       render: (item: Wifi) => (
         <div className="cell-actions">
+          <button className="action-btn action-btn-primary" title="Sửa" onClick={() => onEdit(item)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
           <button className="action-btn action-btn-danger" title="Xóa" onClick={() => onDelete(item.id)}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="3 6 5 6 21 6" />
